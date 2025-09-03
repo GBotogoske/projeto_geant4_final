@@ -11,6 +11,9 @@
 #include "G4Cons.hh"
 #include "G4Orb.hh"
 #include "G4Sphere.hh"
+#include "G4Tubs.hh"
+#include "G4EllipticalTube.hh"
+#include "G4ExtrudedSolid.hh"
 #include "G4Trd.hh"
 #include "G4LogicalVolume.hh"
 #include "G4PVPlacement.hh"
@@ -22,7 +25,7 @@
 #include "G4NistManager.hh"
 #include <math.h>
 
-
+//nota de coordadenas (x,y,z) --> (direcao da tela, direcao do campo, direcao transversal da tela)
 
 // Option to switch on/off checking of volumes overlaps
 G4bool checkOverlaps = true;
@@ -69,9 +72,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4double cryostatThickness = config_cryostat["thickness"].get<double>()*cm;
 
     G4Material* cryostat_mat = fNistManager->FindOrBuildMaterial(config_cryostat["material"].get<string>());
-    G4Box* solidExternalCryostat = new G4Box("Cryostat_ext",0.5*cryostat_sizeX, 0.5*cryostat_sizeY, 0.5*cryostat_sizeZ);
-    G4Box* solidInternalCryostat = new G4Box("Cryostat_int",
-        0.5*cryostat_sizeX-cryostatThickness, 0.5*cryostat_sizeY-cryostatThickness, 0.5*cryostat_sizeZ-cryostatThickness);
+    G4Box* solidExternalCryostat = new G4Box("Cryostat_ext",0.5*cryostat_sizeX+cryostatThickness, 0.5*cryostat_sizeY+cryostatThickness, 0.5*cryostat_sizeZ+cryostatThickness);
+    G4Box* solidInternalCryostat = new G4Box("Cryostat_int",0.5*cryostat_sizeX, 0.5*cryostat_sizeY, 0.5*cryostat_sizeZ);
     auto solidCryostat = new G4SubtractionSolid("Cryostat", solidExternalCryostat,solidInternalCryostat,nullptr,G4ThreeVector());
     
     G4LogicalVolume* logicCryostat = new G4LogicalVolume(solidCryostat,cryostat_mat,"Cryostat");
@@ -183,14 +185,92 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     G4Box* solidBARv = new G4Box("vertical_bar",0.5*FCv_sizeX, 0.5*FCv_sizeY, 0.5*FCv_sizeZ);
     
-    int n_barv_long = (cryostat_sizeX-2*cryostatThickness-2*d_cryo)/FCv_distance;
-    int n_barv_long_2 = (cryostat_sizeX)/FCv_distance;
+    int n_barv_long = (cryostat_sizeX-2*d_cryo)/FCv_distance;
+    G4UnionSolid* FCv_united =  new G4UnionSolid("FCv_longwall_template", solidBARv, solidBARv, 0, G4ThreeVector(FCv_distance,0,0));
+    for(int i=1;i<n_barv_long/2;i++)
+    {
+        FCv_united = new G4UnionSolid("FCv_longwall_template", FCv_united, solidBARv, 0, G4ThreeVector((i+1)*FCv_distance,0,0));
+        FCv_united = new G4UnionSolid("FCv_longwall_template", FCv_united, solidBARv, 0, G4ThreeVector((-i)*FCv_distance,0,0));     
+    } 
 
-    G4cout << "#######  " << n_barv_long <<  "  #######  \n";
-    G4cout << "#######  " << n_barv_long_2 <<  "  #######  \n";
+    int n_barv_end = (cryostat_sizeZ-2*d_cryo)/FCv_distance;
+    G4UnionSolid* FCv_united_end =  new G4UnionSolid("FCv_endwall_template", solidBARv, solidBARv, 0, G4ThreeVector(0,0,FCv_distance));
+    for(int i=1;i<n_barv_end/2;i++)
+    {
+        FCv_united_end = new G4UnionSolid("FCv_endwall_template", FCv_united_end, solidBARv, 0, G4ThreeVector(0,0,(i+1)*FCv_distance));
+        FCv_united_end = new G4UnionSolid("FCv_endwall_template", FCv_united_end, solidBARv, 0, G4ThreeVector(0,0,(-i)*FCv_distance));     
+    } 
 
-    G4LogicalVolume* LogicalFC = new G4LogicalVolume(solidBARv,FC_mat,"FC");
-    G4VPhysicalVolume* physicalFC = new G4PVPlacement(0,G4ThreeVector(),LogicalFC,"FC",logicCryostatFilling,false,0,checkOverlaps);
+    double barH_eixoX = config_FC["horizontal_bar_1_majorAxis"].get<double>()*cm;
+    double barH_eixoY = config_FC["horizontal_bar_1_minorAxis"].get<double>()*cm;
+    double barH_length = cryostat_sizeX-2*d_cryo;
+
+    //auto solidBARh_start = new G4EllipticalTube("horizontal_bar_1_start", barH_eixoX/2, barH_eixoY/2, barH_length/2);
+ 
+    double cut_value = config_FC["cut_horizontal_bar1"].get<double>()*cm;
+    double rest_value= (barH_eixoY  - cut_value);
+
+   std::vector<G4TwoVector> ellipse;
+    int npoints = 200; // resolução da elipse
+    for (int i=0; i<npoints; i++) {
+        double phi = 2*CLHEP::pi*i/npoints;
+        double x = (barH_eixoX/2.0)*cos(phi);
+        double y = (barH_eixoY/2.0)*sin(phi);
+        y = std::max(y, -(cut_value-barH_eixoY/2));
+        ellipse.push_back(G4TwoVector(
+            x,
+            y
+        ));
+    }
+
+    auto solidBARh = new G4ExtrudedSolid("solidEllipse",
+    ellipse,  barH_length/2,
+    G4TwoVector(0,0), 1.0,   
+    G4TwoVector(0,0), 1.0);  
+
+    //auto exclusion_region1 = new G4Box("exclusion_region_1", barH_eixoX/2 , rest_value/2, barH_length/2);
+    //auto solidBARh = new G4SubtractionSolid("horizontal_bar_1", solidBARh_start,exclusion_region1,
+    //    nullptr, G4ThreeVector(0 , -cut_value/2 ,  0)); 
+
+    G4double FCh_distance = config_FC["horizontal_bar_distance"].get<double>()*cm;
+    int n_barh_long = (FCv_sizeY)/FCh_distance;    
+
+    G4UnionSolid* FCh_united =  new G4UnionSolid("FCh_longwall_template", solidBARh, solidBARh, 0, G4ThreeVector(FCh_distance,0,0));
+    for(int i=1;i<n_barh_long/2;i++)
+    {
+        FCh_united = new G4UnionSolid("FCv_longwall_template", FCh_united, solidBARh, 0, G4ThreeVector((i+1)*FCh_distance,0,0));
+        FCh_united = new G4UnionSolid("FCv_longwall_template", FCh_united, solidBARh, 0, G4ThreeVector((-i)*FCh_distance,0,0));     
+    } 
+
+    G4RotationMatrix* rotTopY = new G4RotationMatrix();
+    rotTopY->rotateY(90*deg);
+    G4RotationMatrix* rotTopX = new G4RotationMatrix();
+    rotTopX->rotateX(90*deg);
+    G4RotationMatrix* rotFinal  = new G4RotationMatrix(); 
+    *rotFinal= (*rotTopY) * (*rotTopX);
+   
+    G4LogicalVolume* LogicalFCv_wall = new G4LogicalVolume(FCv_united,FC_mat,"FC");
+    G4LogicalVolume* LogicalFCv_end = new G4LogicalVolume(FCv_united_end,FC_mat,"FC");
+    G4LogicalVolume* LogicalFCh_wall = new G4LogicalVolume(FCh_united,FC_mat,"FC");
+    G4VisAttributes* visFC = new G4VisAttributes(G4Colour(0.5, 0.5, 0.5)); 
+    visFC->SetForceSolid(true); 
+    LogicalFCv_wall->SetVisAttributes(visFC);
+    LogicalFCv_end->SetVisAttributes(visFC);
+    LogicalFCh_wall->SetVisAttributes(visFC);
+
+    G4VPhysicalVolume* physicalFC1_v = new G4PVPlacement(0,G4ThreeVector(-FCv_distance/2,0,cryostat_sizeZ/2-d_cryo),
+        LogicalFCv_wall,"FCv_long_wall",logicCryostatFilling,true,1,checkOverlaps);
+    G4VPhysicalVolume* physicalFC2_v = new G4PVPlacement(0,G4ThreeVector(-FCv_distance/2,0,-cryostat_sizeZ/2+d_cryo),
+        LogicalFCv_wall,"FCv_long_wall",logicCryostatFilling,true,2,checkOverlaps);
+    G4VPhysicalVolume* physicalFC3_v = new G4PVPlacement(0,G4ThreeVector(cryostat_sizeX/2-d_cryo,0,-FCv_distance/2),
+        LogicalFCv_end,"FCv_end_wall",logicCryostatFilling,true,1,checkOverlaps);
+    G4VPhysicalVolume* physicalFC4_v = new G4PVPlacement(0,G4ThreeVector(-cryostat_sizeX/2+d_cryo,0,-FCv_distance/2),
+        LogicalFCv_end,"FCv_end_wall",logicCryostatFilling,true,2,checkOverlaps);
+
+    G4VPhysicalVolume* physicalFC1_h = new G4PVPlacement( rotFinal 
+        ,G4ThreeVector(0,-FCh_distance/2, cryostat_sizeZ/2-d_cryo-FCv_sizeZ/2-(cut_value-barH_eixoY/2)),
+        LogicalFCh_wall,"FCh_long_wall",logicCryostatFilling,false,0,checkOverlaps);
+    
 
     // -----  Liquid Argon && FC Interface Boundary --------
 
@@ -202,7 +282,11 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     mpt_FCLar_Surface->AddProperty("REFLECTIVITY",{1,1}, {config_FC["reflectivity"].get<double>(),config_FC["reflectivity"].get<double>()},2);
     surface_FC_lar->SetMaterialPropertiesTable(mpt_FCLar_Surface);
 
-    new G4LogicalBorderSurface("LiquidArgon-->FC", physicalCryostatFilling, physicalFC , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->FC1v", physicalCryostatFilling, physicalFC1_v , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->FC2v", physicalCryostatFilling, physicalFC2_v , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->FC3v", physicalCryostatFilling, physicalFC3_v , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->FC4v", physicalCryostatFilling, physicalFC4_v , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->FC1h", physicalCryostatFilling, physicalFC1_h , surface_FC_lar );
 
     return physicalWorld;
   
