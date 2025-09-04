@@ -39,10 +39,10 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 
     G4ParticleDefinition* photon = G4ParticleTable::GetParticleTable()->FindParticle("opticalphoton");
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 100; i++) {
         fParticleGun->SetParticleDefinition(photon);
         fParticleGun->SetParticleEnergy(9.7*eV);       // 128 nm
-        fParticleGun->SetParticlePosition(G4ThreeVector(0.,0.,0.));
+        fParticleGun->SetParticlePosition(G4ThreeVector(0.,3*cm,0.));
 
         G4double theta = std::acos(1 - 2*G4UniformRand()); // de 0 a pi
         G4double phi   = 2*M_PI*G4UniformRand();           // de 0 a 2pi
