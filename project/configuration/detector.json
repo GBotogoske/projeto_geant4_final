@@ -9,7 +9,7 @@
     "cryostat": 
     {
         "size": [60.0, 13, 13.0],
-        "thickness": 0.1,
+        "thickness": 0.008,
         "material": "G4_STAINLESS-STEEL",
         "refraction_index": 3.0,
         "abs_length": 0.1,
@@ -60,7 +60,7 @@
     "Cathode_Grid":
     {
         "hole": 0.6,
-        "separation": 0.005
+        "separation": 0.05
     },
     "Acrylic":
     {
