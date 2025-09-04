@@ -338,48 +338,59 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // ---- Inserting Cathode grid -------- 
 
     auto config_Cathode = config["Cathode_Grid"];
-    auto config_LDU = config["LDU"];
 
+    // dimensões do cátodo
     double cathode_X = cryostat_sizeX-2*d_cryo-FCv_sizeX-cut_value1;
     double cathode_Y = cryostat_sizeZ-2*d_cryo-FCv_sizeZ-cut_value1;
     double cathode_hole_X = config_Cathode["hole"].get<double>()*cm;
     double cathode_hole_Y = config_Cathode["hole"].get<double>()*cm;
     double cathode_separation = config_Cathode["separation"].get<double>()*cm;
 
+    // cátodo sólido
     auto cathode = new G4Box("Cathode", 0.5*cathode_X, 0.5*cryostatThickness, 0.5*cathode_Y);
-    double fudge = 0.00*mm; 
-    auto cathodehole = new G4Box("Cathode_Hole",
-                                0.5*cathode_hole_X + fudge,
-                                0.5*cryostatThickness*1.05, 
-                                0.5*cathode_hole_Y + fudge);
+    auto logicalCathode = new G4LogicalVolume(cathode, FC_mat, "Cathode");
+
+    // grade de furos
+    auto cathodehole = new G4Box("Cathode_Hole", 0.5*cathode_hole_X, 1.1*0.5*cryostatThickness, 0.5*cathode_hole_Y);
+    auto logicalHole = new G4LogicalVolume(cathodehole, lar_mat, "Cathode_Hole");
+
+    // número de furos
     int n_cathode_x = (cathode_X+cathode_separation)/(cathode_hole_X+cathode_separation);
-    G4cout << "####" << (cathode_X+cathode_separation)/(cathode_hole_X+cathode_separation) << std::endl;
-    G4UnionSolid* cathodehole_United =  new G4UnionSolid("Cathode_United", cathodehole, cathodehole, 0, 
-        G4ThreeVector(cathode_separation+cathode_hole_X,0,0));
-    for(int i=1;i<n_cathode_x/2;i++)
-    {
-        cathodehole_United = new G4UnionSolid("Cathode_United", cathodehole_United, cathodehole, 0, G4ThreeVector((i+1)*(cathode_separation+cathode_hole_X),0,0));
-        cathodehole_United = new G4UnionSolid("Cathode_United", cathodehole_United, cathodehole, 0, G4ThreeVector((-i)*(cathode_separation+cathode_hole_X),0,0));     
-    } 
     int n_cathode_y = (cathode_Y+cathode_separation)/(cathode_hole_Y+cathode_separation);
-    G4cout << "####" << n_cathode_y << std::endl;
-    auto cathodehole_United2 =  new G4UnionSolid("Cathode_United2", cathodehole_United, cathodehole_United, 0, 
-        G4ThreeVector(0,0,cathode_separation+cathode_hole_Y));
-    for(int i=1;i<n_cathode_y/2;i++)
-    {
-        cathodehole_United2 = new G4UnionSolid("Cathode_United2", cathodehole_United2, cathodehole_United, 0, G4ThreeVector(0,0,(i+1)*(cathode_separation+cathode_hole_Y)));
-        cathodehole_United2 = new G4UnionSolid("Cathode_United2", cathodehole_United2, cathodehole_United, 0, G4ThreeVector(0,0,-i*(cathode_separation+cathode_hole_Y)));     
-    } 
 
-    auto cathode_with_hole = new G4SubtractionSolid("Cathode_With_Hole",cathode,cathodehole_United2,nullptr,
-        G4ThreeVector(-(cathode_separation+cathode_hole_X)/2,0,-(cathode_separation+cathode_hole_Y)/2));
+    // coloca cátodo no cryostat
+    G4VPhysicalVolume* physicalCathode = new G4PVPlacement(
+        0, G4ThreeVector(0,0,0), logicalCathode, "Cathode", logicCryostatFilling, false, 0);
 
-    auto logicalCathode = new G4LogicalVolume(cathode_with_hole,FC_mat, "Cathode");
+    // PVs físicos para cada furo
+    for (int ix = 0; ix < n_cathode_x; ix++) {
+        for (int iz = 0; iz < n_cathode_y; iz++) {
+            double x_pos = (ix - (n_cathode_x-1)/2.0)*(cathode_hole_X + cathode_separation);
+            double z_pos = (iz - (n_cathode_y-1)/2.0)*(cathode_hole_Y + cathode_separation);
+            G4ThreeVector pos(x_pos, 0, z_pos);
 
-    G4VisAttributes* visCathode = new G4VisAttributes(G4Colour(0.9, 0.9, 0.9)); 
-    visCathode->SetForceSolid(true); 
+            auto physicalHole = new G4PVPlacement(
+                0, pos, logicalHole,
+                "Cathode_Hole_PV", logicalCathode, false, ix*n_cathode_y + iz
+            );
+
+            // cria BorderSurface entre o LAr do furo e o cátodo sólido
+            new G4LogicalBorderSurface(
+                "LAr_in_Hole-->Cathode",
+                physicalHole, physicalCathode, surface_FC_lar
+            );
+        }
+    }
+
+    // superfície entre o LAr externo e o cátodo
+    new G4LogicalBorderSurface(
+        "LiquidArgon-->Cathode", physicalCryostatFilling, physicalCathode , surface_FC_lar
+    );
+
+    // visualização
+    G4VisAttributes* visCathode = new G4VisAttributes(G4Colour(0.9,0.9,0.9));
+    visCathode->SetForceSolid(true);
     logicalCathode->SetVisAttributes(visCathode);
-    G4VPhysicalVolume* physicalCathode = new G4PVPlacement(0,{0,0,0},logicalCathode,"Cathode",logicCryostatFilling,false,0); 
 
 
     return physicalWorld;
