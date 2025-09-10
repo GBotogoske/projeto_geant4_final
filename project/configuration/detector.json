@@ -64,7 +64,12 @@
     },
     "Acrylic":
     {
-
+        "thickness": 0.001,
+        "density": 1.19,
+        "elements": ["C","H","O"],
+        "n_elements": [5,8,2],
+        "abs_length": "acrylic_absorption.json",
+        "refraction_index": "acrylic_index.json"
     },
     "LDU":
     {
