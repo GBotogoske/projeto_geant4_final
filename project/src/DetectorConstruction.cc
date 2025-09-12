@@ -365,28 +365,28 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     mpt_Acry->AddProperty("ABSLENGTH", absE_acry.data(), absLen_acry.data(), n_abs_acry); 
     Acry_mat->SetMaterialPropertiesTable(mpt_Acry);
 
-    double acrylic_X = cryostat_sizeX-2*d_cryo-FCv_sizeX-cut_value1;
+    double acrylic_X = cryostat_sizeX-2*d_cryo-FCv_sizeX-2*cut_value1;
     double acrylic_Y = FCv_sizeY;
-    double acrylic_Z = cryostat_sizeZ-2*d_cryo-FCv_sizeZ-cut_value1;
+    double acrylic_Z = cryostat_sizeZ-2*d_cryo-FCv_sizeZ-2*cut_value1;
     double acry_thickness = config_Acrylic["thickness"].get<double>()*cm;
     auto acrylic_wall_long = new G4Box("Acrylic_long", 0.5*acrylic_X, 0.5*acrylic_Y, 0.5*acry_thickness);
     auto acrylic_wall_end = new G4Box("Acrylic_end",  0.5*acry_thickness, 0.5*acrylic_Y, 0.5*acrylic_Z);
     auto logical_Acrylic_wall_long = new G4LogicalVolume(acrylic_wall_long, Acry_mat , "Acrylic_long");
     auto logical_Acrylic_wall_end = new G4LogicalVolume(acrylic_wall_end, Acry_mat , "Acrylic_end");
 
-    G4VPhysicalVolume* physicalAcrylical1 = new G4PVPlacement(0, G4ThreeVector(0,0,cryostat_sizeZ/2-d_cryo-FCv_sizeZ-cut_value1-0.5*acry_thickness), 
-        logical_Acrylic_wall_long, "Acrylical_long", logicWorld, true, 1);
-    G4VPhysicalVolume* physicalAcrylical2 = new G4PVPlacement(0, G4ThreeVector(0,0,-(cryostat_sizeZ/2-d_cryo-FCv_sizeZ-cut_value1-0.5*acry_thickness)), 
-        logical_Acrylic_wall_long, "Acrylical_long", logicWorld, true, 2);
-    G4VPhysicalVolume* physicalAcrylical3 = new G4PVPlacement(0, G4ThreeVector(cryostat_sizeX/2-d_cryo-FCv_sizeX-cut_value1-0.5*acry_thickness,0,0), 
-        logical_Acrylic_wall_end, "Acrylical_end", logicWorld, true, 1);
-    G4VPhysicalVolume* physicalAcrylical4 = new G4PVPlacement(0, G4ThreeVector(-(cryostat_sizeX/2-d_cryo-FCv_sizeX-cut_value1-0.5*acry_thickness),0,0), 
-        logical_Acrylic_wall_end, "Acrylical_end", logicWorld, true, 2);
+    G4VPhysicalVolume* physicalAcrylical1 = new G4PVPlacement(0, G4ThreeVector(0,0,cryostat_sizeZ/2-d_cryo-0.5*FCv_sizeZ-cut_value1-0.5*acry_thickness), 
+        logical_Acrylic_wall_long, "Acrylical_long", logicWorld, true, 1, checkOverlaps);
+    G4VPhysicalVolume* physicalAcrylical2 = new G4PVPlacement(0, G4ThreeVector(0,0,-(cryostat_sizeZ/2-d_cryo-0.5*FCv_sizeZ-cut_value1-0.5*acry_thickness)), 
+        logical_Acrylic_wall_long, "Acrylical_long", logicWorld, true, 2, checkOverlaps);
+    G4VPhysicalVolume* physicalAcrylical3 = new G4PVPlacement(0, G4ThreeVector(cryostat_sizeX/2-d_cryo-0.5*FCv_sizeX-cut_value1-0.5*acry_thickness,0,0), 
+        logical_Acrylic_wall_end, "Acrylical_end", logicWorld, true, 1, checkOverlaps);
+    G4VPhysicalVolume* physicalAcrylical4 = new G4PVPlacement(0, G4ThreeVector(-(cryostat_sizeX/2-d_cryo-0.5*FCv_sizeX-cut_value1-0.5*acry_thickness),0,0), 
+        logical_Acrylic_wall_end, "Acrylical_end", logicWorld, true, 2, checkOverlaps);
     
     G4VisAttributes* visAcry = new G4VisAttributes(G4Colour(0.8, 0.1, 0.1)); 
     visAcry->SetForceSolid(true); 
     logical_Acrylic_wall_long->SetVisAttributes(visAcry);
-
+    logical_Acrylic_wall_end->SetVisAttributes(visAcry);
     // interface between acrylic, metal and argon
 
     G4OpticalSurface* surface_acrylic_lar = new G4OpticalSurface("surface_acry_lar");
@@ -417,6 +417,45 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("Argon-->Acrylic3", physicalWorld ,  physicalAcrylical3,surface_acrylic_lar );
     new G4LogicalBorderSurface("Argon-->Acrylic4", physicalWorld , physicalAcrylical4, surface_acrylic_lar ); 
    
+    //Inserting PEN
+
+    auto config_PEN = config["PEN"];
+    auto density_PEN = config_PEN["density"].get<double>()*g/cm3;
+    std::vector<G4int>  natoms_PEN = config_PEN["n_elements"].get<std::vector<G4int>>();
+    std::vector<G4String> elements_PEN = config_PEN["elements"].get<std::vector<G4String>>();
+    int n_abs_pen = 3;
+    G4Material* PEN_mat = new G4Material("My_PEN",density=density_PEN,n_abs_pen);
+    for (size_t i=0; i<n_abs_pen; i++) 
+    {
+        G4Element* elem = fNistManager->FindOrBuildElement(elements_PEN[i]);
+        PEN_mat->AddElement(elem,natoms_PEN[i]);
+    }
+    
+    double pen_X = acrylic_X-2*acry_thickness;
+    double pen_Y = acrylic_Y;
+    double pen_Z = acrylic_Z-2*acry_thickness;
+    double pen_thickness = config_PEN["thickness"].get<double>()*cm;
+    auto pen_wall_long = new G4Box("PEN_long", 0.5*pen_X, 0.5*pen_Y, 0.5*pen_thickness);
+    auto pen_wall_end = new G4Box("PEN_end",  0.5*pen_thickness, 0.5*pen_Y, 0.5*pen_Z);
+
+    auto logical_pen_wall_long = new G4LogicalVolume(pen_wall_long, PEN_mat , "PEN_long");
+    auto logical_pen_wall_end = new G4LogicalVolume(pen_wall_end, PEN_mat , "PEN_end");
+
+    G4VPhysicalVolume* physicalPEN1 = new G4PVPlacement(0, G4ThreeVector(0,0,cryostat_sizeZ/2-d_cryo-0.5*FCv_sizeZ-cut_value1-acry_thickness-0.5*pen_thickness), 
+        logical_pen_wall_long, "PEN_long", logicWorld, true, 1, checkOverlaps);
+    G4VPhysicalVolume* physicalPEN2 = new G4PVPlacement(0, G4ThreeVector(0,0,-(cryostat_sizeZ/2-d_cryo-0.5*FCv_sizeZ-cut_value1-acry_thickness-0.5*pen_thickness)), 
+        logical_pen_wall_long, "PEN_long", logicWorld, true, 2, checkOverlaps);
+    G4VPhysicalVolume* physicalPEN3 = new G4PVPlacement(0, G4ThreeVector(cryostat_sizeX/2-d_cryo-0.5*FCv_sizeX-cut_value1-acry_thickness-0.5*pen_thickness,0,0), 
+        logical_pen_wall_end, "PEN_end", logicWorld, true, 1, checkOverlaps);
+    G4VPhysicalVolume* physicalPEN4 = new G4PVPlacement(0, G4ThreeVector(-(cryostat_sizeX/2-d_cryo-0.5*FCv_sizeX-cut_value1-acry_thickness-0.5*pen_thickness),0,0), 
+        logical_pen_wall_end, "PEN_end", logicWorld, true, 2, checkOverlaps);
+    
+    G4VisAttributes* visPEN = new G4VisAttributes(G4Colour(1, 1, 0.1)); 
+    visPEN->SetForceSolid(true); 
+    logical_pen_wall_long->SetVisAttributes(visPEN);
+    logical_pen_wall_end->SetVisAttributes(visPEN);
+
+
     // ---- Inserting Cathode grid -------- 
 
     /* auto config_Cathode = config["Cathode_Grid"];
