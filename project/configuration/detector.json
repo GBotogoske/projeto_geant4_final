@@ -82,7 +82,8 @@
         "mean_excitation": 64.7,
         "abs_length": "pen_absorption.json",
         "emissium": "pen_emissium.json",
-        "time_constant": 25
+        "time_constant": 25.0,
+        "efficiency": 0.3
     },
     "LDU":
     {
