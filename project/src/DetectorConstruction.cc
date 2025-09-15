@@ -418,7 +418,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("Argon-->Acrylic4", physicalWorld , physicalAcrylical4, surface_acrylic_lar ); 
    
     //Inserting PEN
-
     auto config_PEN = config["PEN"];
     auto density_PEN = config_PEN["density"].get<double>()*g/cm3;
     std::vector<G4int>  natoms_PEN = config_PEN["n_elements"].get<std::vector<G4int>>();
@@ -458,25 +457,24 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     // ---- Inserting Cathode grid -------- 
 
-    /* auto config_Cathode = config["Cathode_Grid"];
+    auto config_Cathode = config["Cathode_Grid"];
 
-    double cathode_X = cryostat_sizeX-2*d_cryo-FCv_sizeX-cut_value1;
-    double cathode_Y = cryostat_sizeZ-2*d_cryo-FCv_sizeZ-cut_value1;
+    double cathode_X = pen_X -2*pen_thickness;
+    double cathode_Z = pen_Z -2*pen_thickness;
     double cathode_hole_X = config_Cathode["hole"].get<double>()*cm;
     double cathode_hole_Y = config_Cathode["hole"].get<double>()*cm;
     double cathode_separation = config_Cathode["separation"].get<double>()*cm;
 
 
-    auto cathode = new G4Box("Cathode", 0.5*cathode_X, 0.5*cryostatThickness, 0.5*cathode_Y);
+    auto cathode = new G4Box("Cathode", 0.5*cathode_X, 0.5*cryostatThickness, 0.5*cathode_Z);
     auto logicalCathode = new G4LogicalVolume(cathode, FC_mat, "Cathode");
-    auto cathodehole = new G4Box("Cathode_Hole", 0.5*cathode_hole_X, 1.1*0.5*cryostatThickness, 0.5*cathode_hole_Y);
+    auto cathodehole = new G4Box("Cathode_Hole", 0.5*cathode_hole_X, 0.5*cryostatThickness, 0.5*cathode_hole_Y);
     auto logicalHole = new G4LogicalVolume(cathodehole, lar_mat, "Cathode_Hole");
     int n_cathode_x = (cathode_X+cathode_separation)/(cathode_hole_X+cathode_separation);
-    int n_cathode_y = (cathode_Y+cathode_separation)/(cathode_hole_Y+cathode_separation);
+    int n_cathode_y = (cathode_Z+cathode_separation)/(cathode_hole_Y+cathode_separation);
 
-    G4VPhysicalVolume* physicalCathode = new G4PVPlacement(0, G4ThreeVector(0,0,0), logicalCathode, "Cathode", logicCryostatFilling, false, 0);
+    G4VPhysicalVolume* physicalCathode = new G4PVPlacement(0, G4ThreeVector(0,0,0), logicalCathode, "Cathode", logicWorld, false, 0);
 
-    
     for (int ix = 0; ix < n_cathode_x; ix++)
     {
         for (int iz = 0; iz < n_cathode_y; iz++) 
@@ -486,31 +484,14 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
             G4ThreeVector pos(x_pos, 0, z_pos);
 
             auto physicalHole = new G4PVPlacement(0, pos, logicalHole,"Cathode_Hole_PV", logicalCathode, false, ix*n_cathode_y + iz);
-
             new G4LogicalBorderSurface( "LAr_in_Hole-->Cathode", physicalHole, physicalCathode, surface_FC_lar );
         }
     }
-    new G4LogicalBorderSurface("LiquidArgon-->Cathode", physicalCryostatFilling, physicalCathode , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->Cathode", physicalWorld, physicalCathode , surface_FC_lar );
 
     G4VisAttributes* visCathode = new G4VisAttributes(G4Colour(0.9,0.9,0.9));
     visCathode->SetForceSolid(true);
-    logicalCathode->SetVisAttributes(visCathode); */
-
-
-    /* auto conjwindows = new G4Box("Window", 0.5*cryolength,0.5*(cryoheight-4*lduw),0.5*winthick);
-    auto conjwindowsfb = new G4Box("Window Front/Bottom", 0.5*winthick,0.5*(cryoheight-4*lduw),0.5*cryowidth-fcwdist-fchbarw-penthick-winthick-2*profheight);
-    auto logwindow =    new G4LogicalVolume(conjwindows,  Acrylic,"Logical Window");
-    auto logwindowfb =  new G4LogicalVolume(conjwindowsfb,Acrylic,"Logical Window FB");
-    logwindow->SetVisAttributes( new G4VisAttributes( G4Color::Blue() ) );
-    G4VisAttributes * WinVisAtt = new G4VisAttributes(G4Color::Blue());
-    WinVisAtt->SetForceSolid(true);
-    //logwindowfb->SetVisAttributes( new G4VisAttributes( G4Color::Blue()) );
-    logwindowfb->SetVisAttributes(WinVisAtt);
-    G4VPhysicalVolume* phywindow1 = new G4PVPlacement(0,{0,0,cryowidth/2-fcwdist-fcvbarw-2*profheight},logwindow, "World/Window", logicalWorld,false,0);
-    G4VPhysicalVolume* phywindow2 = new G4PVPlacement(0,{0,0,-cryowidth/2+fcwdist+fcvbarw+2*profheight},logwindow, "World/Window", logicalWorld,false,0);
-    G4VPhysicalVolume* phywindowf = new G4PVPlacement(0,{0.5*(cryolength-4*lduw)-fchbarw-2*profheight,0,0},logwindowfb, "World/Window Front", logicalWorld,false,0);
-    G4VPhysicalVolume* phywindowb = new G4PVPlacement(0,{-0.5*(cryolength-4*lduw)+fchbarw+2*profheight,0,0},logwindowfb, "World/Window Bottom", logicalWorld,false,0);
- */
+    logicalCathode->SetVisAttributes(visCathode); 
 
     return physicalWorld;
   
