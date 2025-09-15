@@ -6,11 +6,11 @@
 #include "G4EmStandardPhysics_option4.hh"
 #include "G4OpticalPhysics.hh"
 
-#ifdef G4MULTITHREADED
-#include "G4MTRunManager.hh"
-#else
+//#ifdef G4MULTITHREADED
+//#include "G4MTRunManager.hh"
+//#else
 #include "G4RunManager.hh"
-#endif
+//#endif
 
 #include "G4UImanager.hh"
 #include "G4VisExecutive.hh"
@@ -34,11 +34,11 @@ int main(int argc,char** argv)
   
   // Construct the default run manager
   //
-#ifdef G4MULTITHREADED
+/* #ifdef G4MULTITHREADED
   G4MTRunManager* runManager = new G4MTRunManager;
-#else
+#else */
   G4RunManager* runManager = new G4RunManager;
-#endif
+//#endif
 
   // Set mandatory initialization classes
   //

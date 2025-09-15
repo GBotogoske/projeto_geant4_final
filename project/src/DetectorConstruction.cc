@@ -4,6 +4,7 @@
 
 #include "SensitiveDetector.hh"
 #include "G4LogicalBorderSurface.hh"
+#include "G4LogicalSkinSurface.hh"  
 
 #include "G4Material.hh"
 #include "G4RunManager.hh"
@@ -651,7 +652,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4double* RIndex_SiPM=new G4double[size];
     for (int i=0;i<size;i++){*(RIndex_SiPM+i)=rindex_SiPM;}
     G4double* AbsorptionLength_SiPM=new G4double[size];
-    for (int i=0;i<size;i++){*(AbsorptionLength_SiPM+i)=abslength_SiPM;}//10*cm
+    for (int i=0;i<size;i++){*(AbsorptionLength_SiPM+i)=abslength_SiPM;}
 
     G4double* scint_emission = new G4double[size];
     G4double* RIndex_array   = new G4double[size];
@@ -663,10 +664,10 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
         RIndex_array[i]   = rindex_SiPM; 
         abs_array[i] = abslength_SiPM;
     }
+
     G4MaterialPropertiesTable* mpt_SiPM = new G4MaterialPropertiesTable();
     mpt_SiPM->AddProperty("RINDEX",scint_emission,RIndex_array,size);
     mpt_SiPM->AddProperty("ABSLENGTH",scint_emission,abs_array,size);
-
     SiPM_mat->SetMaterialPropertiesTable(mpt_SiPM);
 
     G4Box* sipmteste = new G4Box("sipm" , 0.5*2*cm , 0.5*0.2*cm , 0.5*2*cm);
@@ -676,6 +677,32 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4VisAttributes* visSiPM = new G4VisAttributes(G4Colour(0.01, 1, 0.1)); 
     visSiPM->SetForceSolid(true); 
     sipmteste_logical->SetVisAttributes(visSiPM);
+
+    G4SDManager *SD_manager = G4SDManager::GetSDMpointer();
+    G4String SDModuleName = "/SensitiveDetector";
+    if(SD_manager->FindSensitiveDetector(SDModuleName,true))
+        delete(SD_manager->FindSensitiveDetector(SDModuleName,true));
+    SensitiveDetector *sensitiveModule = new SensitiveDetector(SDModuleName,"HitUVCollection");
+    SD_manager->AddNewDetector(sensitiveModule);
+  
+    sipmteste_logical->SetSensitiveDetector(sensitiveModule);
+
+    auto sipmSurface = new G4OpticalSurface("SiPM_Surface");
+    sipmSurface->SetType(dielectric_dielectric);  // para fotodetector
+    sipmSurface->SetFinish(polished);
+    sipmSurface->SetModel(unified);
+
+    // Propriedades da superfície
+    G4MaterialPropertiesTable* mpt_surface = new G4MaterialPropertiesTable();
+
+    G4double photonEnergy[2] = {1*eV, 10*eV}; // faixa espectral
+    G4double reflectivity[2] = {1.0, 1.0};       // sem reflexo
+
+    mpt_surface->AddProperty("REFLECTIVITY", photonEnergy, reflectivity, 2);
+    sipmSurface->SetMaterialPropertiesTable(mpt_surface);
+
+    // --- Associa a superfície ao volume do SiPM ---
+    new G4LogicalBorderSurface("World_to_SiPM", physicalWorld, sipmteste_physical, sipmSurface);
 
     return physicalWorld;
   

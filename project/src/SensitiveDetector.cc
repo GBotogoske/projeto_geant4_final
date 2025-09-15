@@ -1,5 +1,5 @@
 #include "SensitiveDetector.hh"
-#include "OneHit.hh"
+#include "OneHitUV.hh"
 #include "G4ThreeVector.hh"
 #include "G4SDManager.hh"
 #include "G4ios.hh"
@@ -25,7 +25,7 @@ static const G4double c = CLHEP::c_light/((CLHEP::nm)/(CLHEP::ns));
 
 SensitiveDetector::SensitiveDetector(const G4String &SDname,const G4String &HitCollectionName)
   : G4VSensitiveDetector(SDname),
-    fHitCollection(NULL),
+    fHitUVCollection(NULL),
     fE(0.),
     fP(0)
 {
@@ -37,74 +37,84 @@ SensitiveDetector::~SensitiveDetector(){}
 
 void SensitiveDetector::Initialize(G4HCofThisEvent *HCE)
 {
-  fHitCollection = new HitCollection(GetName(),collectionName[0]);
-  static G4int HCID = G4SDManager::GetSDMpointer()->GetCollectionID(collectionName[0]); //<<-- this is to get an ID for the colletionName[0]
-  //G4cout<<"*** "<<fHitCollection->GetName()<<" initialized [ID = "<<HCID<<"]"<<G4endl;
-  HCE->AddHitsCollection(HCID, fHitCollection);
+    fHitUVCollection = new HitUVCollection(GetName(),collectionName[0]);
+    static G4int HCID = G4SDManager::GetSDMpointer()->GetCollectionID(collectionName[0]); //<<-- this is to get an ID for the colletionName[0]
+    //G4cout<<"*** "<<fHitCollection->GetName()<<" initialized [ID = "<<HCID<<"]"<<G4endl;
+    HCE->AddHitsCollection(HCID, fHitUVCollection);
 }
 
 
 G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
 {
-  G4double eDep   = aStep->GetTotalEnergyDeposit();
-  G4int counter = 0;
+    G4double eDep   = aStep->GetTotalEnergyDeposit();
+    G4int counter = 0;
 
-  SensitiveDetector::AddEdep(eDep);
-  
-  G4String myParticle = "e-";
-  G4String thisParticle = aStep->GetTrack()->GetParticleDefinition()->GetParticleName();
-  G4String thisVolume   = aStep->GetTrack()->GetVolume()->GetName();
-  
-  G4int pDetected = 0;
-  if(thisParticle=="opticalphoton"){
-    G4String procName = aStep->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
-    G4bool checkAbsorption = G4StrUtil::contains(procName,"Absorption");
-    if(checkAbsorption==true and G4StrUtil::contains(thisVolume,"SiPM"))
-      pDetected +=1;
+    SensitiveDetector::AddEdep(eDep);
+
+    G4String myParticle = "e-";
+    G4String thisParticle = aStep->GetTrack()->GetParticleDefinition()->GetParticleName();
+    G4String thisVolume   = aStep->GetTrack()->GetVolume()->GetName();
+
+    G4Track* track = aStep->GetTrack();
+    G4TrackStatus status = track->GetTrackStatus();
+
+    G4int pDetected = 0;
+    if(thisParticle=="opticalphoton")
+    {
+        G4String procName = aStep->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
+        G4bool checkAbsorption = G4StrUtil::contains(procName,"Absorption");
+
+        if(checkAbsorption==true and G4StrUtil::contains(thisVolume,"sipm"))
+        {
+            pDetected +=1;
+        }
+ 
     }
-  SensitiveDetector::SetCounterStatus(pDetected);
-  return true;
+    SensitiveDetector::SetCounterStatus(pDetected);
+    return true;
 }
 
 void SensitiveDetector::EndOfEvent(G4HCofThisEvent*)
 {
-  //Fill the hits
-  OneHit *aHit = new OneHit();
-  G4double TotE = SensitiveDetector::GetTotalE();
-  G4int TotP = SensitiveDetector::GetCounterStatus();
+    //Fill the hits
+    OneHitUV *aHit = new OneHitUV();
+    G4double TotE = SensitiveDetector::GetTotalE();
+    G4int TotP = SensitiveDetector::GetCounterStatus();
 
-  aHit->SetEDep(TotE);
-  aHit->SetPhotonCounter(TotP);
+    aHit->SetEDep(TotE);
+    aHit->SetPhotonCounter(TotP);
 
-  fHitCollection->insert(aHit);
+    fHitUVCollection->insert(aHit);
 
-  SensitiveDetector::PrintSDMemoryStatus();
-  SensitiveDetector::CleanSDMemory();
+    SensitiveDetector::PrintSDMemoryStatus();
+    SensitiveDetector::CleanSDMemory();
 }
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 G4bool SensitiveDetector::IsAnOpticalPhoton(G4Step* aStep){
-  G4bool flag = false;
-  G4Track *aTrack = aStep->GetTrack();
-  const G4ParticleDefinition* aDef = aTrack->GetParticleDefinition();
-  G4String aName = aDef->GetParticleName();
-  if(aName=="opticalphoton"){
+    G4bool flag = false;
+    G4Track *aTrack = aStep->GetTrack();
+    const G4ParticleDefinition* aDef = aTrack->GetParticleDefinition();
+    G4String aName = aDef->GetParticleName();
+    if(aName=="opticalphoton"){
     flag=true;
-  }
-  return flag;
+    }
+    return flag;
 }
 
-void SensitiveDetector::CleanSDMemory(){
-  SensitiveDetector::DeleteTotalE();
-  SensitiveDetector::ResetCounterStatus();
+void SensitiveDetector::CleanSDMemory()
+{
+    SensitiveDetector::DeleteTotalE();
+    SensitiveDetector::ResetCounterStatus();
 }
 
-void SensitiveDetector::PrintSDMemoryStatus(){
-  G4double TotE = SensitiveDetector::GetTotalE();
-  G4int    TotP = SensitiveDetector::GetCounterStatus();
-  G4cout<<"O.o.O.o.O.o.O.o.O.o.O.o.O.o.O.o.O.o.O.o.O"<<G4endl;
-  G4cout<<" Total Energy deposited = "<<G4BestUnit(TotE,"Energy")<<G4endl;
-  G4cout<<" Total Photon detected  = "<<TotP<<G4endl;
-  G4cout<<"O.o.O.o.O.o.O.o.O.o.O.o.O.o.O.o.O.o.O.o.O"<<G4endl;
+void SensitiveDetector::PrintSDMemoryStatus()
+{
+    G4double TotE = SensitiveDetector::GetTotalE();
+    G4int    TotP = SensitiveDetector::GetCounterStatus();
+    G4cout<<"O.o.O.o.O.o.O.o.O.o.O.o.O.o.O.o.O.o.O.o.O"<<G4endl;
+    G4cout<<" Total Energy deposited = "<<G4BestUnit(TotE,"Energy")<<G4endl;
+    G4cout<<" Total Photon detected  = "<<TotP<<G4endl;
+    G4cout<<"O.o.O.o.O.o.O.o.O.o.O.o.O.o.O.o.O.o.O.o.O"<<G4endl;
 }
