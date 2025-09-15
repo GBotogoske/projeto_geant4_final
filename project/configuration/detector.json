@@ -76,8 +76,13 @@
         "thickness": 0.001,
         "density": 1.3,
         "elements": ["C","H","O"],
-        "n_elements": [14,10,4]
-
+        "n_elements": [14,10,4],
+        "refraction_index": 1.7,
+        "birks": 0.012,
+        "mean_excitation": 64.7,
+        "abs_length": "pen_absorption.json",
+        "emissium": "pen_emissium.json",
+        "time_constant": 25
     },
     "LDU":
     {

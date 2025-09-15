@@ -387,8 +387,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     visAcry->SetForceSolid(true); 
     logical_Acrylic_wall_long->SetVisAttributes(visAcry);
     logical_Acrylic_wall_end->SetVisAttributes(visAcry);
-    // interface between acrylic, metal and argon
 
+    // interface between acrylic, metal and argon
     G4OpticalSurface* surface_acrylic_lar = new G4OpticalSurface("surface_acry_lar");
     surface_acrylic_lar->SetModel(unified);
     surface_acrylic_lar->SetType(dielectric_dielectric);
@@ -407,7 +407,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     new G4LogicalBorderSurface("LiquidArgon-->Cryo", physicalWorld, physicalCryostat , surface_cryo_lar );
 
-
     new G4LogicalBorderSurface("Acrylic1-->Argon", physicalAcrylical1, physicalWorld , surface_acrylic_lar );
     new G4LogicalBorderSurface("Acrylic2-->Argon", physicalAcrylical2, physicalWorld , surface_acrylic_lar );
     new G4LogicalBorderSurface("Argon-->Acrylic1", physicalWorld ,  physicalAcrylical1,surface_acrylic_lar );
@@ -417,19 +416,53 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("Argon-->Acrylic3", physicalWorld ,  physicalAcrylical3,surface_acrylic_lar );
     new G4LogicalBorderSurface("Argon-->Acrylic4", physicalWorld , physicalAcrylical4, surface_acrylic_lar ); 
    
-    //Inserting PEN
+    //-----------------   Inserting PEN
     auto config_PEN = config["PEN"];
     auto density_PEN = config_PEN["density"].get<double>()*g/cm3;
     std::vector<G4int>  natoms_PEN = config_PEN["n_elements"].get<std::vector<G4int>>();
     std::vector<G4String> elements_PEN = config_PEN["elements"].get<std::vector<G4String>>();
-    int n_abs_pen = 3;
-    G4Material* PEN_mat = new G4Material("My_PEN",density=density_PEN,n_abs_pen);
-    for (size_t i=0; i<n_abs_pen; i++) 
+    int n_pen = 3;
+    G4Material* PEN_mat = new G4Material("My_PEN",density=density_PEN,n_pen);
+    for (size_t i=0; i<n_pen; i++) 
     {
         G4Element* elem = fNistManager->FindOrBuildElement(elements_PEN[i]);
         PEN_mat->AddElement(elem,natoms_PEN[i]);
     }
-    
+
+    std::string file_PEN_abs = config_PEN["abs_length"].get<string>();
+    std::ifstream f_pen_abs(std::string("../configuration/")+file_PEN_abs);
+    json data_pen = json::parse(f_pen_abs);
+    size_t n_abs_pen = data_pen.size();
+    std::vector<G4double> energies_abs_pen(n_abs_pen);
+    std::vector<G4double> abs_pen(n_abs_pen);
+    for (size_t i = 0; i < n_abs_pen; i++) 
+    {
+        energies_abs_pen[i] = data_pen[i]["E"].get<double>()*eV;  
+        abs_pen[i] = data_pen[i]["l"].get<double>()*mm;
+    }
+
+    std::string file_PEN_em = config_PEN["emissium"].get<string>();
+    std::ifstream f_pen_em(std::string("../configuration/")+file_PEN_em);
+    json data_pen_em = json::parse(f_pen_em);
+    size_t n_em_pen = data_pen_em.size();
+    std::vector<G4double> energies_em_pen(n_em_pen);
+    std::vector<G4double> em_pen(n_em_pen);
+    for (size_t i = 0; i < n_em_pen; i++) 
+    {
+        energies_em_pen[i] = data_pen_em[i]["E"].get<double>()*eV;  
+        em_pen[i] = data_pen_em[i]["l"].get<double>();
+    }
+
+    auto mpt_PEN = new G4MaterialPropertiesTable();
+    auto refraction_index_pen = config_PEN["refraction_index"].get<double>();
+    mpt_PEN->AddProperty("RINDEX", {0.1,1},{refraction_index_pen,refraction_index_pen} , 2);
+    mpt_PEN->AddProperty("WLSABSLENGTH", energies_abs_pen, abs_pen,n_abs_pen);
+    mpt_PEN->AddProperty("WLSCOMPONENT", energies_em_pen, em_pen, n_em_pen);
+    mpt_PEN->AddProperty("WLSTIMECONSTANT",config_PEN["time_constant"]);
+    PEN_mat->SetMaterialPropertiesTable(mpt_PEN);
+    PEN_mat->GetIonisation()->SetBirksConstant(config_PEN["birks"].get<double>()*cm/MeV);
+    PEN_mat->GetIonisation()->SetMeanExcitationEnergy(config_PEN["mean_excitation"].get<double>()*eV);
+
     double pen_X = acrylic_X-2*acry_thickness;
     double pen_Y = acrylic_Y;
     double pen_Z = acrylic_Z-2*acry_thickness;
