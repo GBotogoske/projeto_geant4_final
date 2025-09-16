@@ -64,6 +64,7 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
         G4String procName = aStep->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
         G4bool checkAbsorption = G4StrUtil::contains(procName,"Absorption");
 
+        G4cout << thisVolume << std::endl;
         if(checkAbsorption==true and G4StrUtil::contains(thisVolume,"sipmVIS"))
         {
             const auto& sipm_spectrum = SiPMSpectrum::get();

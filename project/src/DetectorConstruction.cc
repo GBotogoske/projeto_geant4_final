@@ -599,7 +599,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     double cathode_hole_Y = config_Cathode["hole"].get<double>()*cm;
     double cathode_separation = config_Cathode["separation"].get<double>()*cm;
 
-
     auto cathode = new G4Box("Cathode", 0.5*cathode_X, 0.5*cryostatThickness, 0.5*cathode_Z);
     auto logicalCathode = new G4LogicalVolume(cathode, FC_mat, "Cathode");
     auto cathodehole = new G4Box("Cathode_Hole", 0.5*cathode_hole_X, 0.5*cryostatThickness, 0.5*cathode_hole_Y);
@@ -651,9 +650,12 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4double abslength_SiPM = config_SiPM["abs_length"].get<double>()*cm;
 
     G4double size_SiPM = config_SiPM["size"].get<double>()*cm;
+    G4double thickness_SiPM = config_SiPM["thickness"].get<double>()*cm;
     G4double dv_SiPM = config_SiPM["distance_vertical"].get<double>()*cm;
     G4double dh_SiPM = config_SiPM["distance_horizontal"].get<double>()*cm;
     
+    std::vector<std::vector<std::string>> matrix_pos = config_SiPM["map_ldu"].get<std::vector<std::vector<std::string>>>(); //[i][j] = [linha][coluna]
+
     int size=2;
     G4double* RIndex_SiPM=new G4double[size];
     for (int i=0;i<size;i++){*(RIndex_SiPM+i)=rindex_SiPM;}
@@ -674,29 +676,16 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     mpt_SiPM->AddProperty("ABSLENGTH",scint_emission,abs_array,size);
     SiPM_mat->SetMaterialPropertiesTable(mpt_SiPM);
 
-    G4Box* sipmteste = new G4Box("sipm" , 0.5*2*cm , 0.5*0.2*cm , 0.5*2*cm);
-    auto sipmteste_logical = new G4LogicalVolume(sipmteste, SiPM_mat , "sipm");
-    G4VPhysicalVolume* sipmteste_physical = new G4PVPlacement(0,G4ThreeVector(0,1*cm,0),sipmteste_logical,"sipmVIS",logicWorld,false,false,checkOverlaps);
+    G4Box* sipm_template = new G4Box("sipm" , size_SiPM/2 , size_SiPM/2 , thickness_SiPM/2);
+    auto sipmvis_logical = new G4LogicalVolume(sipm_template, SiPM_mat , "sipm");
+    auto sipmuv_logical = new G4LogicalVolume(sipm_template, SiPM_mat , "sipm");
 
-    G4VisAttributes* visSiPM = new G4VisAttributes(G4Colour(0.01, 1, 0.1)); 
-    visSiPM->SetForceSolid(true); 
-    sipmteste_logical->SetVisAttributes(visSiPM);
-
-    G4SDManager *SD_manager = G4SDManager::GetSDMpointer();
-    G4String SDModuleName = "/SensitiveDetector";
-    if(SD_manager->FindSensitiveDetector(SDModuleName,true))
-        delete(SD_manager->FindSensitiveDetector(SDModuleName,true));
-    SensitiveDetector *sensitiveModule = new SensitiveDetector(SDModuleName,"HitUVCollection");
-    SD_manager->AddNewDetector(sensitiveModule);
-  
-    sipmteste_logical->SetSensitiveDetector(sensitiveModule);
-
+    // Surface properties
     auto sipmSurface = new G4OpticalSurface("SiPM_Surface");
     sipmSurface->SetType(dielectric_dielectric);  // para fotodetector
     sipmSurface->SetFinish(polished);
     sipmSurface->SetModel(unified);
 
-    // Propriedades da superfície
     G4MaterialPropertiesTable* mpt_surface = new G4MaterialPropertiesTable();
 
     G4double photonEnergy[2] = {1*eV, 10*eV}; 
@@ -705,8 +694,122 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     mpt_surface->AddProperty("REFLECTIVITY", photonEnergy, reflectivity, 2);
     sipmSurface->SetMaterialPropertiesTable(mpt_surface);
 
-    // --- Associa a superfície ao volume do SiPM ---
-    new G4LogicalBorderSurface("World_to_SiPM", physicalWorld, sipmteste_physical, sipmSurface);
+    std::vector<std::vector<G4ThreeVector>> base_shifts(
+        4, std::vector<G4ThreeVector>(4, G4ThreeVector(0,0,0))
+    );
+    std::vector<std::vector<G4ThreeVector>> base_shifts_end(
+        4, std::vector<G4ThreeVector>(4, G4ThreeVector(0,0,0))
+    );
+    for(int i=0;i<4;i++)
+    {
+        for(int j=0;j<4;j++)
+        {
+            base_shifts[i][j]=G4ThreeVector(-1.5*size_SiPM+i*size_SiPM,-1.5*size_SiPM+j*size_SiPM,0);
+        }
+    }
+    for(int i=0;i<4;i++)
+    {
+        for(int j=0;j<4;j++)
+        {
+            base_shifts_end[i][j]=G4ThreeVector(0,-1.5*size_SiPM+j*size_SiPM,-1.5*size_SiPM+i*size_SiPM);
+        }
+    }
+
+    std::vector<G4PVPlacement*> sipm_physicals;
+    sipm_physicals.clear();
+
+    int n_ldu_x = (cryostat_sizeX-4*size_SiPM+dh_SiPM)/dh_SiPM;
+    int n_ldu_y = (cryostat_sizeY-4*size_SiPM+dv_SiPM)/dv_SiPM;
+
+    int cont=0;
+    for (int ix = 0; ix < n_ldu_x; ix++)
+    {
+        for (int iy = 0; iy < n_ldu_y; iy++) 
+        {
+            double x_pos = (ix - (n_ldu_x-1)/2.0)*(dh_SiPM);
+            double y_pos = (iy - (n_ldu_y-1)/2.0)*(dv_SiPM);
+            
+            for (int side = -1; side <= 1; side += 2)
+            {
+                double z_pos = side * (cryostat_sizeZ/2 - thickness_SiPM/2);               
+                G4ThreeVector base(x_pos, y_pos, z_pos);
+                for(int i=0;i<4;i++)
+                {
+                    for(int j=0;j<4;j++)
+                    {
+                        if(matrix_pos[i][j]=="V")
+                        {
+                            sipm_physicals.push_back(new G4PVPlacement(0,base+base_shifts[i][j],sipmvis_logical,"sipmVIS:" + std::to_string(i) + "_" + std::to_string(j)
+                                ,logicWorld,true,cont,false));
+                        }
+                        if(matrix_pos[i][j]=="U")
+                        {
+                            sipm_physicals.push_back(new G4PVPlacement(0,base+base_shifts[i][j],sipmuv_logical,"sipmUV:" + std::to_string(i) + "_" + std::to_string(j)
+                                ,logicWorld,true,cont,false));
+                        }    
+                        new G4LogicalBorderSurface("World_to_SiPM", physicalWorld, sipm_physicals.back(), sipmSurface);
+                    }
+                }
+                cont++;
+            }
+        }
+    }
+    
+    auto rotY90 = new G4RotationMatrix();
+    rotY90->rotateY(90.*deg);
+    int n_ldu_z = (cryostat_sizeZ-4*size_SiPM+dh_SiPM)/dh_SiPM;
+    for (int iz = 0; iz < n_ldu_z; iz++)
+    {
+        for (int iy = 0; iy < n_ldu_y; iy++) 
+        {
+            double z_pos = (iz - (n_ldu_z-1)/2.0)*(dh_SiPM);
+            double y_pos = (iy - (n_ldu_y-1)/2.0)*(dv_SiPM);
+            
+            for (int side = -1; side <= 1; side += 2)
+            {
+                double x_pos = side * (cryostat_sizeX/2 - thickness_SiPM/2);               
+                G4ThreeVector base(x_pos, y_pos, z_pos);
+                for(int i=0;i<4;i++)
+                {
+                    for(int j=0;j<4;j++)
+                    {
+                        if(matrix_pos[i][j]=="V")
+                        {
+                            sipm_physicals.push_back(new G4PVPlacement(rotY90,base+base_shifts_end[i][j],sipmvis_logical,"sipmVIS:" + std::to_string(i) + "_" + std::to_string(j)
+                                ,logicWorld,true,cont,false));
+                        }
+                        if(matrix_pos[i][j]=="U")
+                        {
+                            sipm_physicals.push_back(new G4PVPlacement(rotY90,base+base_shifts_end[i][j],sipmuv_logical,"sipmUV:" + std::to_string(i) + "_" + std::to_string(j)
+                                ,logicWorld,true,cont,false));
+                        }    
+                        new G4LogicalBorderSurface("World_to_SiPM", physicalWorld, sipm_physicals.back(), sipmSurface);
+                    }
+                }
+                cont++;
+            }
+        }
+    }
+
+    // Visible properties
+    G4VisAttributes* visSiPM = new G4VisAttributes(G4Colour(0.01, 1, 0.1)); 
+    visSiPM->SetForceSolid(true); 
+    sipmvis_logical->SetVisAttributes(visSiPM);
+
+    G4VisAttributes* visSiPMuv = new G4VisAttributes(G4Colour(0.6, 0, 0.6)); 
+    visSiPMuv->SetForceSolid(true); 
+    sipmuv_logical->SetVisAttributes(visSiPMuv);
+
+    // Detector Properties
+    G4SDManager *SD_manager = G4SDManager::GetSDMpointer();
+    G4String SDModuleName = "/SensitiveDetector";
+    if(SD_manager->FindSensitiveDetector(SDModuleName,true))
+        delete(SD_manager->FindSensitiveDetector(SDModuleName,true));
+    SensitiveDetector *sensitiveModule = new SensitiveDetector(SDModuleName,"HitUVCollection");
+    SD_manager->AddNewDetector(sensitiveModule);
+  
+    sipmvis_logical->SetSensitiveDetector(sensitiveModule);
+    sipmuv_logical->SetSensitiveDetector(sensitiveModule);
 
     return physicalWorld;
   
