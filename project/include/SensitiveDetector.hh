@@ -3,10 +3,13 @@
 
 #include "DetectorConstruction.hh"
 #include "OneHitUV.hh"
+#include "OneHitVIS.hh"
 #include "G4VSensitiveDetector.hh"
 #include "G4TouchableHistory.hh"
 #include "G4OpBoundaryProcess.hh"
 #include <vector>
+
+#include "SiPMSpectrum.hh"
 
 class G4Step;
 class G4HCofThisEvent;
@@ -40,9 +43,10 @@ public:
     void PrintSDMemoryStatus();
 
     private:
-    HitUVCollection *fHitUVCollection;
+    HitVISCollection *fHitVISCollection;
     G4double      fE;
     G4int         fP;
+
 };
 
 #endif

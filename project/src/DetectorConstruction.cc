@@ -642,11 +642,17 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("PEN4 --> Cathode Grid", physicalPEN4 , physicalCathode, surface_pen_cryo );
 
 
-    // Vamos colocar uma sipm teste
+    // Assembling the SiPMs
+
+     auto config_SiPM = config["SiPM"];
 
     G4Material* SiPM_mat     = fNistManager->FindOrBuildMaterial("G4_Si");
-    G4double rindex_SiPM    = 1.55;
-    G4double abslength_SiPM = 10*nm;
+    G4double rindex_SiPM    = config_SiPM["refraction_index"].get<double>();
+    G4double abslength_SiPM = config_SiPM["abs_length"].get<double>()*cm;
+
+    G4double size_SiPM = config_SiPM["size"].get<double>()*cm;
+    G4double dv_SiPM = config_SiPM["distance_vertical"].get<double>()*cm;
+    G4double dh_SiPM = config_SiPM["distance_horizontal"].get<double>()*cm;
     
     int size=2;
     G4double* RIndex_SiPM=new G4double[size];
@@ -657,14 +663,12 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4double* scint_emission = new G4double[size];
     G4double* RIndex_array   = new G4double[size];
     G4double* abs_array   = new G4double[size];
-
     for (int i=0; i<size; i++) 
     {
         scint_emission[i] = i+1;        
         RIndex_array[i]   = rindex_SiPM; 
         abs_array[i] = abslength_SiPM;
     }
-
     G4MaterialPropertiesTable* mpt_SiPM = new G4MaterialPropertiesTable();
     mpt_SiPM->AddProperty("RINDEX",scint_emission,RIndex_array,size);
     mpt_SiPM->AddProperty("ABSLENGTH",scint_emission,abs_array,size);
@@ -672,7 +676,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     G4Box* sipmteste = new G4Box("sipm" , 0.5*2*cm , 0.5*0.2*cm , 0.5*2*cm);
     auto sipmteste_logical = new G4LogicalVolume(sipmteste, SiPM_mat , "sipm");
-    G4VPhysicalVolume* sipmteste_physical = new G4PVPlacement(0,G4ThreeVector(0,1*cm,0),sipmteste_logical,"sipm",logicWorld,false,false,checkOverlaps);
+    G4VPhysicalVolume* sipmteste_physical = new G4PVPlacement(0,G4ThreeVector(0,1*cm,0),sipmteste_logical,"sipmVIS",logicWorld,false,false,checkOverlaps);
 
     G4VisAttributes* visSiPM = new G4VisAttributes(G4Colour(0.01, 1, 0.1)); 
     visSiPM->SetForceSolid(true); 
@@ -695,8 +699,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // Propriedades da superfície
     G4MaterialPropertiesTable* mpt_surface = new G4MaterialPropertiesTable();
 
-    G4double photonEnergy[2] = {1*eV, 10*eV}; // faixa espectral
-    G4double reflectivity[2] = {1.0, 1.0};       // sem reflexo
+    G4double photonEnergy[2] = {1*eV, 10*eV}; 
+    G4double reflectivity[2] = {1.0, 1.0};       
 
     mpt_surface->AddProperty("REFLECTIVITY", photonEnergy, reflectivity, 2);
     sipmSurface->SetMaterialPropertiesTable(mpt_surface);

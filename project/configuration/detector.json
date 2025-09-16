@@ -85,9 +85,20 @@
         "time_constant": 25.0,
         "efficiency": 0.3
     },
-    "LDU":
-    {
-        "size": 0.2  
+    "SiPM":
+    { 
+        "refraction_index": 1.55,
+        "abs_length": 0.0000001,
+        "efficiency_UV": "efficiency_UV.json",
+        "efficiency_VIS": "efficiency_VIS.json",
+        "size": 0.05,
+        "thickness": 0.008,
+        "distance_vertical": 1.0,
+        "distance_horizontal": 1.0,
+        "map_ldu": [["V","V","V","V"],
+                    ["V","U","U","V"],
+                    ["V","U","U","V"],
+                    ["V","V","V","V"]]
     }
 
 }
