@@ -109,8 +109,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     mpt_LAr->AddProperty("ABSLENGTH", absE_LAr.data(), absLen_LAr.data(), n_abs);
     mpt_LAr->AddProperty("SCINTILLATIONCOMPONENT1",scintE_LAr,scint,n_scint);
     mpt_LAr->AddProperty("SCINTILLATIONCOMPONENT2",scintE_LAr,scint,n_scint);
-    mpt_LAr->AddConstProperty("SCINTILLATIONYIELD",scint_lar["LY"].get<double>()/MeV);
-    mpt_LAr->AddConstProperty("SCINTILLATIONTIMECONSTANT1",scint_lar["Slow_Comp"].get<double>()*ns);
+    mpt_LAr->AddConstProperty("SCINTILLATIONYIELD",scint_lar["LY_without_field"].get<double>()/MeV);
+    mpt_LAr->AddConstProperty("SCINTILLATIONTIMECONSTANT1",scint_lar["Slow_Comp_without_field"].get<double>()*ns);
     mpt_LAr->AddConstProperty("SCINTILLATIONTIMECONSTANT2",scint_lar["Fast_Comp"].get<double>()*ns);
     mpt_LAr->AddConstProperty("SCINTILLATIONYIELD1", scint_lar["Slow_Amp"].get<double>());
     mpt_LAr->AddConstProperty("SCINTILLATIONYIELD2", scint_lar["Fast_Amp"].get<double>());
@@ -587,12 +587,59 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("PEN3 -->LAr", physicalPEN3 , physicalWorld, surface_PEN_lar );
     new G4LogicalBorderSurface("PEN4 -->LAr", physicalPEN4 , physicalWorld, surface_PEN_lar );
 
+
+    // ----- Creating liquid argon REGION inside FC with lower light yield due to the electric field -----
+
+    G4Material* lar_mat_inside = fNistManager->FindOrBuildMaterial(config_cryostat["filling"].get<string>());
+
+    auto mpt_LAr2 = new G4MaterialPropertiesTable();
+    mpt_LAr2->AddProperty("RINDEX", energies_r.data(), rindex.data(), n_abs);
+    mpt_LAr2->AddProperty("ABSLENGTH", absE_LAr.data(), absLen_LAr.data(), n_abs);
+    mpt_LAr2->AddProperty("SCINTILLATIONCOMPONENT1",scintE_LAr,scint,n_scint);
+    mpt_LAr2->AddProperty("SCINTILLATIONCOMPONENT2",scintE_LAr,scint,n_scint);
+    mpt_LAr2->AddConstProperty("SCINTILLATIONYIELD",scint_lar["LY"].get<double>()/MeV);
+    mpt_LAr2->AddConstProperty("SCINTILLATIONTIMECONSTANT1",scint_lar["Slow_Comp"].get<double>()*ns);
+    mpt_LAr2->AddConstProperty("SCINTILLATIONTIMECONSTANT2",scint_lar["Fast_Comp"].get<double>()*ns);
+    mpt_LAr2->AddConstProperty("SCINTILLATIONYIELD1", scint_lar["Slow_Amp"].get<double>());
+    mpt_LAr2->AddConstProperty("SCINTILLATIONYIELD2", scint_lar["Fast_Amp"].get<double>());
+    mpt_LAr2->AddConstProperty("RESOLUTIONSCALE",scint_lar["Resolution"].get<double>());
+    mpt_LAr2->AddProperty("RAYLEIGH", energies_ray.data(), ray_lar.data(), n_rayleigh);
+    lar_mat_inside->SetMaterialPropertiesTable(mpt_LAr2);
+
+    double Lar_inside_X = pen_X-2*pen_thickness;
+    double Lar_inside_Y = pen_Y;
+    double Lar_inside_Z = pen_Z-2*pen_thickness;
+
+    auto inside_argon = new G4Box("inside_argon", 0.5*Lar_inside_X, 0.5*Lar_inside_Y, 0.5*Lar_inside_Z);
+    G4LogicalVolume* logicInsideArgon = new G4LogicalVolume(inside_argon,lar_mat_inside,"inside_argon");
+    G4VPhysicalVolume* physicalInsideArgon = new G4PVPlacement(0,G4ThreeVector(),logicInsideArgon,"inside_argon",logicWorld,false,0,checkOverlaps);
+
+    // Re-making some surfaces but with the argon inside
+
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC1v", physicalInsideArgon, physicalFC1_v , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC2v", physicalInsideArgon, physicalFC2_v , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC3v", physicalInsideArgon, physicalFC3_v , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC4v", physicalInsideArgon, physicalFC4_v , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC1h", physicalInsideArgon, physicalFC1_h , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC2h", physicalInsideArgon, physicalFC2_h , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC3h", physicalInsideArgon, physicalFC3_h , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC4h", physicalInsideArgon, physicalFC4_h , surface_FC_lar );
+
+    new G4LogicalBorderSurface("LAr_Inside --> PEN1", physicalInsideArgon, physicalPEN1 , surface_PEN_lar );
+    new G4LogicalBorderSurface("LAr_Inside --> PEN2", physicalInsideArgon, physicalPEN2 , surface_PEN_lar );
+    new G4LogicalBorderSurface("LAr_Inside --> PEN3", physicalInsideArgon, physicalPEN3 , surface_PEN_lar );
+    new G4LogicalBorderSurface("LAr_Inside --> PEN4", physicalInsideArgon, physicalPEN4 , surface_PEN_lar );
+    new G4LogicalBorderSurface("PEN1 -->LAr_Inside", physicalPEN1 , physicalInsideArgon, surface_PEN_lar );
+    new G4LogicalBorderSurface("PEN2 -->LAr_Inside", physicalPEN2 , physicalInsideArgon, surface_PEN_lar );
+    new G4LogicalBorderSurface("PEN3 -->LAr_Inside", physicalPEN3 , physicalInsideArgon, surface_PEN_lar );
+    new G4LogicalBorderSurface("PEN4 -->LAr_Inside", physicalPEN4 , physicalInsideArgon, surface_PEN_lar );
+
     // ---- Creating Cathode grid -------- 
 
     auto config_Cathode = config["Cathode_Grid"];
 
-    double cathode_X = pen_X -2*pen_thickness;
-    double cathode_Z = pen_Z -2*pen_thickness;
+    double cathode_X = pen_X - 2*pen_thickness;
+    double cathode_Z = pen_Z - 2*pen_thickness;
     double cathode_hole_X = config_Cathode["hole"].get<double>()*cm;
     double cathode_hole_Y = config_Cathode["hole"].get<double>()*cm;
     double cathode_separation = config_Cathode["separation"].get<double>()*cm;
@@ -600,7 +647,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     auto cathode = new G4Box("Cathode", 0.5*cathode_X, 0.5*cryostatThickness, 0.5*cathode_Z);
     auto logicalCathode = new G4LogicalVolume(cathode, FC_mat, "Cathode");
     auto cathodehole = new G4Box("Cathode_Hole", 0.5*cathode_hole_X, 0.5*cryostatThickness, 0.5*cathode_hole_Y);
-    auto logicalHole = new G4LogicalVolume(cathodehole, lar_mat, "Cathode_Hole");
+    auto logicalHole = new G4LogicalVolume(cathodehole, lar_mat_inside, "Cathode_Hole");
     int n_cathode_x = (cathode_X+cathode_separation)/(cathode_hole_X+cathode_separation);
     int n_cathode_y = (cathode_Z+cathode_separation)/(cathode_hole_Y+cathode_separation);
 
@@ -618,12 +665,12 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     visReflector->SetForceSolid(true);
     logicReflector->SetVisAttributes(visReflector); 
 
-    G4VPhysicalVolume* physicalReflectorTop = new G4PVPlacement(0,G4ThreeVector(0,(cryostatThickness+Reflector_thickness)/2),logicReflector,"My_Reflector",logicWorld,true,1,checkOverlaps);
-    G4VPhysicalVolume* physicalReflectorBottom = new G4PVPlacement(0,G4ThreeVector(0,-(cryostatThickness+Reflector_thickness)/2),logicReflector,"My_Reflector",logicWorld,true,2,checkOverlaps);
+    G4VPhysicalVolume* physicalReflectorTop = new G4PVPlacement(0,G4ThreeVector(0,(cryostatThickness+Reflector_thickness)/2),logicReflector,"My_Reflector",logicInsideArgon,true,1,checkOverlaps);
+    G4VPhysicalVolume* physicalReflectorBottom = new G4PVPlacement(0,G4ThreeVector(0,-(cryostatThickness+Reflector_thickness)/2),logicReflector,"My_Reflector",logicInsideArgon,true,2,checkOverlaps);
 
     // ---- Creating Cathode grid -------- PART 2 --- ADDING HOLES
 
-    G4VPhysicalVolume* physicalCathode = new G4PVPlacement(0, G4ThreeVector(0,0,0), logicalCathode, "Cathode", logicWorld, false, 0);
+    G4VPhysicalVolume* physicalCathode = new G4PVPlacement(0, G4ThreeVector(0,0,0), logicalCathode, "Cathode", logicInsideArgon, false, 0);
 
     for (int ix = 0; ix < n_cathode_x; ix++)
     {
@@ -642,12 +689,15 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("LiquidArgon-->Cathode", physicalWorld, physicalCathode , surface_FC_lar );
     new G4LogicalBorderSurface("LiquidArgon-->ReflectorT", physicalWorld, physicalReflectorTop , surface_cryo_lar );
     new G4LogicalBorderSurface("LiquidArgon-->ReflectorB", physicalWorld, physicalReflectorBottom , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->Cathode", physicalInsideArgon, physicalCathode , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->ReflectorT", physicalInsideArgon, physicalReflectorTop , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->ReflectorB", physicalInsideArgon, physicalReflectorBottom , surface_cryo_lar );
 
     G4VisAttributes* visCathode = new G4VisAttributes(G4Colour(0.9,0.9,0.9));
-    visCathode->SetForceSolid(true);
+    //visCathode->SetForceSolid(true);
     logicalCathode->SetVisAttributes(visCathode); 
 
-    // --- Superficie cathode grid com PEN e Vikuiti with PEN------
+    // --- Surface cathode grid com PEN e Vikuiti with PEN------
     G4OpticalSurface* surface_pen_cryo = new G4OpticalSurface("surface_cathode_pen");
     surface_pen_cryo-> SetModel(unified);
     surface_pen_cryo-> SetType(dielectric_metal);
@@ -686,11 +736,12 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("PENTop --> ReflectorT", physicalPENTop , physicalReflectorTop, surface_cryo_lar );
     new G4LogicalBorderSurface("PENTop --> LAr", physicalPENTop , physicalWorld, surface_PEN_lar );
     new G4LogicalBorderSurface("LAr --> PENTop",  physicalWorld, physicalPENTop , surface_PEN_lar );
+    new G4LogicalBorderSurface("PENTop --> LArInside", physicalPENTop , physicalInsideArgon, surface_PEN_lar );
+    new G4LogicalBorderSurface("LArInside --> PENTop",  physicalInsideArgon, physicalPENTop , surface_PEN_lar );
 
     new G4LogicalBorderSurface("PENBottom --> ReflectorBottom", physicalPENBottom , physicalReflectorBottom, surface_cryo_lar );
-    new G4LogicalBorderSurface("PENBottom --> LAr", physicalPENBottom , physicalWorld, surface_PEN_lar );
-    new G4LogicalBorderSurface("LAr --> PENBottom",  physicalWorld, physicalPENBottom , surface_PEN_lar );
-
+    new G4LogicalBorderSurface("PENBottom --> LArInside", physicalPENBottom , physicalInsideArgon, surface_PEN_lar );
+    new G4LogicalBorderSurface("LArInside --> PENBottom",  physicalInsideArgon, physicalPENBottom , surface_PEN_lar );
 
     // ------------- Assembling the SiPMs  ---------------------
 
