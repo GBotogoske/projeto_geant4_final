@@ -44,7 +44,6 @@ DetectorConstruction::~DetectorConstruction(){}
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 G4VPhysicalVolume* DetectorConstruction::Construct()
 {
-
     G4NistManager *fNistManager = G4NistManager::Instance();
     fNistManager->SetVerbose(0);
   
@@ -57,6 +56,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     // -----  Liquid Argon Filling --------
     auto config_LAr = config["liquid_argon"];
+    auto config_Reflector = config["Reflector"];
 
     auto config_cryostat = config["cryostat"];
     G4Material* lar_mat = fNistManager->FindOrBuildMaterial(config_cryostat["filling"].get<string>());
@@ -151,7 +151,21 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     surface_cryo_lar-> SetType(dielectric_metal);
     surface_cryo_lar-> SetFinish(polished);
     G4MaterialPropertiesTable* mpt_CryoLar_Surface = new G4MaterialPropertiesTable();
-    mpt_CryoLar_Surface->AddProperty("REFLECTIVITY",{1,1}, {config_LAr["reflectivity_cryo"].get<double>(),config_LAr["reflectivity_cryo"].get<double>()},2);
+
+    std::string file_vikuiti_reflectance = config_Reflector["reflectivity"].get<string>();
+    std::ifstream f_vikuiti_reflectance(std::string("../configuration/")+file_vikuiti_reflectance);
+    json data_reflectance_vikuiti = json::parse(f_vikuiti_reflectance);
+    
+    size_t n_vikuiti = data_reflectance_vikuiti.size();
+    std::vector<G4double> energies_vikuiti(n_vikuiti);
+    std::vector<G4double> r_vikuiti(n_vikuiti);
+    for (size_t i = 0; i < n_vikuiti; i++) 
+    {
+        energies_vikuiti[i] = data_reflectance_vikuiti[i]["E"].get<double>()*eV;  
+        r_vikuiti[i]   = data_reflectance_vikuiti[i]["r"].get<double>();
+    }
+
+    mpt_CryoLar_Surface->AddProperty("REFLECTIVITY",energies_vikuiti, r_vikuiti,n_vikuiti);
     surface_cryo_lar->SetMaterialPropertiesTable(mpt_CryoLar_Surface);
 
     new G4LogicalBorderSurface("LiquidArgon-->Cryo", physicalWorld, physicalCryostat , surface_cryo_lar );
@@ -527,7 +541,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     logical_pen_wall_long->SetVisAttributes(visPEN);
     logical_pen_wall_end->SetVisAttributes(visPEN);
 
-
     // SURFACES between PEN, acrylic and argon
     G4OpticalSurface* surface_PEN_lar = new G4OpticalSurface("surface_PEN_lar");
     surface_PEN_lar->SetModel(unified);
@@ -653,7 +666,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     // ----------- Inserting VIKUITI over and under cathode -------------
 
-    auto config_Reflector = config["Reflector"];
     auto Reflector_thickness = config_Reflector["thickness"].get<double>()*cm;
     G4Material* Reflector_mat = fNistManager->FindOrBuildMaterial(config_Reflector["material"].get<string>());
     Reflector_mat->SetMaterialPropertiesTable(mpt_Cryo);
@@ -729,9 +741,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     logicPENCathode->SetVisAttributes(visPEN); 
 
     G4VPhysicalVolume* physicalPENTop = new G4PVPlacement(0,G4ThreeVector(0,(cryostatThickness+2*Reflector_thickness+pen_thickness)/2,0)
-        ,logicPENCathode,"PEN_TOP",logicWorld,true,1,checkOverlaps);
+        ,logicPENCathode,"PEN_TOP",inside_argon,true,1,checkOverlaps);
     G4VPhysicalVolume* physicalPENBottom = new G4PVPlacement(0,G4ThreeVector(0,-(cryostatThickness+2*Reflector_thickness+pen_thickness)/2,0)
-        ,logicPENCathode,"PEN_BOTTOM",logicWorld,true,2,checkOverlaps);
+        ,logicPENCathode,"PEN_BOTTOM",inside_argon,true,2,checkOverlaps);
 
     new G4LogicalBorderSurface("PENTop --> ReflectorT", physicalPENTop , physicalReflectorTop, surface_cryo_lar );
     new G4LogicalBorderSurface("PENTop --> LAr", physicalPENTop , physicalWorld, surface_PEN_lar );

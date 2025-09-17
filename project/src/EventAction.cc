@@ -36,7 +36,14 @@ EventAction::GetHitsCollection(G4int HCID, const G4Event* event) const
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 void EventAction::BeginOfEventAction(const G4Event* event)
 {
-    G4int nEvt = event->GetEventID();
+   
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void EventAction::EndOfEventAction(const G4Event* event)
+{
+   G4int nEvt = event->GetEventID();
     auto analysisManager = G4AnalysisManager::Instance();
     if ( fHCID == -1 ) 
     {
@@ -57,13 +64,5 @@ void EventAction::BeginOfEventAction(const G4Event* event)
             analysisManager->FillNtupleDColumn(0,2,  PhotonDetected_UV);
             analysisManager->AddNtupleRow(0);
     }
-
-}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void EventAction::EndOfEventAction(const G4Event* event)
-{
-  G4cout<<"\t !!! EndOfEvent "<<event->GetEventID()<<"!!!\n"<<G4endl;
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
