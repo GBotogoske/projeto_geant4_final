@@ -79,7 +79,7 @@ int main(int argc,char** argv)
     // interactive mode
     UImanager->ApplyCommand("/control/execute init_vis.mac");
     UImanager->ApplyCommand("/control/execute gui.mac");
-    UImanager->ApplyCommand("/vis/open OGL 600x600-0+0");
+    //UImanager->ApplyCommand("/vis/open OGL 600x600-0+0");
     ui->SessionStart();
     delete ui;
   }

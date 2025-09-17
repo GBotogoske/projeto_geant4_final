@@ -2,8 +2,7 @@
 #define SensitiveDetector_h 1
 
 #include "DetectorConstruction.hh"
-#include "OneHitUV.hh"
-#include "OneHitVIS.hh"
+#include "OneHit.hh"
 #include "G4VSensitiveDetector.hh"
 #include "G4TouchableHistory.hh"
 #include "G4OpBoundaryProcess.hh"
@@ -26,16 +25,15 @@ public:
     G4bool ProcessHits(G4Step *step, G4TouchableHistory *ROhist);
     void EndOfEvent(G4HCofThisEvent *HCE);
 
-    // Add methods
-    // // Total deposit Energy
-    void AddEdep(G4double edep) {fE += edep;};
-    void DeleteTotalE()  { fE = 0.;};
-    G4double GetTotalE()  const {return fE;};
-
     // // Photon Counter
-    void SetCounterStatus(G4int p) {fP +=p;};
-    void ResetCounterStatus() {fP = 0;};
-    G4int GetCounterStatus() const {return fP;};
+    void SetCounterStatus_UV(G4int p) {fP_uv +=p;};
+    void ResetCounterStatus_UV() {fP_uv = 0;};
+    G4int GetCounterStatus_UV() const {return fP_uv;};
+
+    void SetCounterStatus_VIS(G4int p) {fP_vis +=p;};
+    void ResetCounterStatus_VIS() {fP_vis = 0;};
+    G4int GetCounterStatus_VIS() const {return fP_vis;};
+
 
     // // // // // //
     G4bool IsAnOpticalPhoton(G4Step* aStep);
@@ -43,9 +41,9 @@ public:
     void PrintSDMemoryStatus();
 
     private:
-    HitVISCollection *fHitVISCollection;
-    G4double      fE;
-    G4int         fP;
+    HitCollection *fHitCollection;
+    G4int         fP_vis;
+    G4int         fP_uv;
 
 };
 

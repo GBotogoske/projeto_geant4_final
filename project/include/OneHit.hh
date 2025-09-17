@@ -21,20 +21,18 @@ class OneHit : public G4VHit{
 
     // methods from base class
 
-    // set methods
-    void SetEDep(G4double E)                              {fEDep = E;};
-    void SetTrackLength(G4double L)                       {fTrackLength = L;};
-    void SetPhotonCounter (G4int p)                       {fPhotonCounter = p;};
 
-    // get methods
-    G4double GetEDep()                         const { return fEDep;};
-    G4double GetTrackLength()                  const { return fTrackLength;};
-    G4int GetPhotonCounter()                   const { return fPhotonCounter;};
+
+    void SetPhotonCounter_VIS (G4int p)                       {fPhotonCounter_VIS = p;};
+    G4int GetPhotonCounter_VIS()                   const { return fPhotonCounter_VIS;};
+
+    void SetPhotonCounter_UV (G4int p)                       {fPhotonCounter_UV = p;};
+    G4int GetPhotonCounter_UV()                   const { return fPhotonCounter_UV;};
 
   private:
-    G4double      fEDep;
-    G4double      fTrackLength;
-    G4int         fPhotonCounter;
+ 
+    G4int         fPhotonCounter_VIS;
+    G4int         fPhotonCounter_UV;
   };
 
 typedef G4THitsCollection<OneHit> HitCollection;

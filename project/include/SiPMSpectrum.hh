@@ -80,7 +80,7 @@ class SiPMSpectrum
         {
             return this->E_uv;
         }  
-        int getNuv() const 
+        int getNUV() const 
         { 
             return this->n_uv; 
         }

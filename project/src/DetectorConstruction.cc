@@ -117,7 +117,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     mpt_LAr->AddConstProperty("RESOLUTIONSCALE",scint_lar["Resolution"].get<double>());
     mpt_LAr->AddProperty("RAYLEIGH", energies_ray.data(), ray_lar.data(), n_rayleigh);
  
-    lar_mat->GetIonisation()->SetBirksConstant(scint_lar["Birks"].get<double>()*cm/MeV); // se comentar essa linha, o valor eh o default do argonio liquido
+    //lar_mat->GetIonisation()->SetBirksConstant(scint_lar["Birks"].get<double>()*cm/MeV); // se comentar essa linha, o valor eh o default do argonio liquido
     lar_mat->SetMaterialPropertiesTable(mpt_LAr);
 
     G4Box* solidWorld = new G4Box("World",0.5*world_sizeX, 0.5*world_sizeY, 0.5*world_sizeZ);
@@ -805,7 +805,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4String SDModuleName = "/SensitiveDetector";
     if(SD_manager->FindSensitiveDetector(SDModuleName,true))
         delete(SD_manager->FindSensitiveDetector(SDModuleName,true));
-    SensitiveDetector *sensitiveModule = new SensitiveDetector(SDModuleName,"HitUVCollection");
+    SensitiveDetector *sensitiveModule = new SensitiveDetector(SDModuleName,"HitCollection");
     SD_manager->AddNewDetector(sensitiveModule);
   
     sipmvis_logical->SetSensitiveDetector(sensitiveModule);
