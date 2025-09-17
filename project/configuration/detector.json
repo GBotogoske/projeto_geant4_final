@@ -8,7 +8,7 @@
         "size": [6000.0, 1300.0, 1300.0],
         "thickness": 0.8,
         "material": "G4_STAINLESS-STEEL",
-        "refraction_index": 3.0,
+        "refraction_index": 1.7,
         "abs_length": 0.0001,
         "filling": "G4_lAr"
     },
@@ -33,7 +33,7 @@
             "Birks": 0.069        
         },
         "rayleigh_scattering": "lar_rayleigh.json",
-        "reflectivity_cryo": 0.7
+        "reflectivity_cryo": 0.98
     },
     "FC":
     {
@@ -70,7 +70,7 @@
     },
     "PEN":
     {
-        "thickness": 0.1,
+        "thickness": 0.0001,
         "density": 1.3,
         "elements": ["C","H","O"],
         "n_elements": [14,10,4],
@@ -80,7 +80,13 @@
         "abs_length": "pen_absorption.json",
         "emissium": "pen_emissium.json",
         "time_constant": 25.0,
-        "efficiency": 0.3
+        "efficiency": 0.5
+    },
+    "Reflector":
+    {
+        "thickness": 1,
+        "material": "G4_KAPTON"
+
     },
     "SiPM":
     { 
