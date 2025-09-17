@@ -741,9 +741,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     logicPENCathode->SetVisAttributes(visPEN); 
 
     G4VPhysicalVolume* physicalPENTop = new G4PVPlacement(0,G4ThreeVector(0,(cryostatThickness+2*Reflector_thickness+pen_thickness)/2,0)
-        ,logicPENCathode,"PEN_TOP",inside_argon,true,1,checkOverlaps);
+        ,logicPENCathode,"PEN_TOP",logicInsideArgon,true,1,checkOverlaps);
     G4VPhysicalVolume* physicalPENBottom = new G4PVPlacement(0,G4ThreeVector(0,-(cryostatThickness+2*Reflector_thickness+pen_thickness)/2,0)
-        ,logicPENCathode,"PEN_BOTTOM",inside_argon,true,2,checkOverlaps);
+        ,logicPENCathode,"PEN_BOTTOM",logicInsideArgon,true,2,checkOverlaps);
 
     new G4LogicalBorderSurface("PENTop --> ReflectorT", physicalPENTop , physicalReflectorTop, surface_cryo_lar );
     new G4LogicalBorderSurface("PENTop --> LAr", physicalPENTop , physicalWorld, surface_PEN_lar );
