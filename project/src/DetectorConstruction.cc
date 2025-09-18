@@ -684,6 +684,10 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     G4VPhysicalVolume* physicalCathode = new G4PVPlacement(0, G4ThreeVector(0,0,0), logicalCathode, "Cathode", logicInsideArgon, false, 0);
 
+    G4VisAttributes* visArgon = new G4VisAttributes();
+    visArgon->SetVisibility(false);
+
+    logicalHole->SetVisAttributes(visArgon); 
     for (int ix = 0; ix < n_cathode_x; ix++)
     {
         for (int iz = 0; iz < n_cathode_y; iz++) 
@@ -707,8 +711,10 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     G4VisAttributes* visCathode = new G4VisAttributes(G4Colour(0.9,0.9,0.9));
     //visCathode->SetForceSolid(true);
-    logicalCathode->SetVisAttributes(visCathode); 
+    //visCathode->SetVisibility(false);
 
+    logicalCathode->SetVisAttributes(visCathode); 
+    
     // --- Surface cathode grid com PEN e Vikuiti with PEN------
     G4OpticalSurface* surface_pen_cryo = new G4OpticalSurface("surface_cathode_pen");
     surface_pen_cryo-> SetModel(unified);

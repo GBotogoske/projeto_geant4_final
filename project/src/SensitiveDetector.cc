@@ -74,14 +74,17 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
             E = sipm_spectrum.get_EVIS();
             n = sipm_spectrum.getNVIS();
         }
-        if(checkAbsorption==true and G4StrUtil::contains(thisVolume,"sipmUV"))
+        else if(checkAbsorption==true and G4StrUtil::contains(thisVolume,"sipmUV"))
         {   
             isUV=true;
             eff = sipm_spectrum.get_effVIS();
             E = sipm_spectrum.get_EVIS();
             n = sipm_spectrum.getNVIS();
         }
-        
+        else
+        {
+            return true;
+        }
         auto Ephoton = aStep->GetTrack()->GetTotalEnergy();
         if(Ephoton<=E[0])
         {

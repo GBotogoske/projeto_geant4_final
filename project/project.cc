@@ -75,10 +75,11 @@ int main(int argc,char** argv)
     G4String fileName = argv[1];
     UImanager->ApplyCommand(command+fileName);
   }
-  else { 
+  else 
+  { 
     // interactive mode
     UImanager->ApplyCommand("/control/execute init_vis.mac");
-    UImanager->ApplyCommand("/control/execute gui.mac");
+    //UImanager->ApplyCommand("/control/execute gui.mac");
     //UImanager->ApplyCommand("/vis/open OGL 600x600-0+0");
     ui->SessionStart();
     delete ui;
