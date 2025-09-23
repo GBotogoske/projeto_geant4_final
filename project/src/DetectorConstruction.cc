@@ -170,6 +170,27 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     new G4LogicalBorderSurface("LiquidArgon-->Cryo", physicalWorld, physicalCryostat , surface_cryo_lar );
 
+    // --------------  ANODE ----------------------------
+    G4Box* solidAnodeTemplate = new G4Box("Anode",0.5*cryostat_sizeX, 0.5*cryostatThickness, 0.5*cryostat_sizeZ);
+    G4LogicalVolume* logicAnode = new G4LogicalVolume(solidAnodeTemplate,cryostat_mat,"Anode");
+    G4VPhysicalVolume* physicalTopAnode = new G4PVPlacement(0,G4ThreeVector(0,0.5*cryostat_sizeY-0.5*cryostatThickness,0),logicAnode,"AnodeUP",logicWorld,false,0,checkOverlaps);
+    G4VPhysicalVolume* physicalBottomAnode = new G4PVPlacement(0,G4ThreeVector(0,-(0.5*cryostat_sizeY-0.5*cryostatThickness),0),logicAnode,"AnodeDown",logicWorld,false,0,checkOverlaps);
+
+
+     // -----  Liquid Argon && ANODE Interface Boundary --------
+
+    G4OpticalSurface* surface_anode_lar = new G4OpticalSurface("surface_anode_lar");
+    surface_anode_lar-> SetModel(unified);
+    surface_anode_lar-> SetType(dielectric_metal);
+    surface_anode_lar-> SetFinish(polished);
+    G4MaterialPropertiesTable* mpt_AnodeLar_Surface = new G4MaterialPropertiesTable();
+
+    mpt_AnodeLar_Surface->AddProperty("REFLECTIVITY",{0.1,10},{config_LAr["reflectivity_anode"].get<double>(),config_LAr["reflectivity_anode"].get<double>()},2);
+    surface_anode_lar->SetMaterialPropertiesTable(mpt_AnodeLar_Surface);
+
+    new G4LogicalBorderSurface("LiquidArgon-->AnodeTop", physicalWorld, physicalTopAnode , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->AnodeBottom", physicalWorld, physicalBottomAnode , surface_cryo_lar );
+
     // ----------------------------------------------------------------------------
     //Assembling the field cage
     auto config_FC = config["FC"];
@@ -411,14 +432,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     mpt_AcryLar_Surface->AddProperty("REFLECTIVITY",{0,15}, {1,1},2);
     surface_acrylic_lar->SetMaterialPropertiesTable(mpt_AcryLar_Surface);
 
-    G4OpticalSurface* surface_acrylic_cryo = new G4OpticalSurface("surface_acry_metal");
-    surface_acrylic_cryo-> SetModel(unified);
-    surface_acrylic_cryo-> SetType(dielectric_metal);
-    surface_acrylic_cryo-> SetFinish(polished);
-    G4MaterialPropertiesTable* mpt_AcryMetal_Surface = new G4MaterialPropertiesTable();
-    mpt_AcryMetal_Surface->AddProperty("REFLECTIVITY",{1,1}, {config_LAr["reflectivity_cryo"].get<double>(),config_LAr["reflectivity_cryo"].get<double>()},2);
-    surface_acrylic_cryo->SetMaterialPropertiesTable(mpt_AcryMetal_Surface);
-
     new G4LogicalBorderSurface("Acrylic1-->Argon", physicalAcrylical1, physicalWorld , surface_acrylic_lar );
     new G4LogicalBorderSurface("Acrylic2-->Argon", physicalAcrylical2, physicalWorld , surface_acrylic_lar );
     new G4LogicalBorderSurface("Argon-->Acrylic1", physicalWorld ,  physicalAcrylical1,surface_acrylic_lar );
@@ -427,42 +440,42 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("Acrylic4-->Argon", physicalAcrylical4, physicalWorld , surface_acrylic_lar );
     new G4LogicalBorderSurface("Argon-->Acrylic3", physicalWorld ,  physicalAcrylical3,surface_acrylic_lar );
     new G4LogicalBorderSurface("Argon-->Acrylic4", physicalWorld , physicalAcrylical4, surface_acrylic_lar ); 
-    new G4LogicalBorderSurface("Acrylic1-->Cryo", physicalAcrylical1, physicalCryostat , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic2-->Cryo", physicalAcrylical2, physicalCryostat , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic3-->Cryo", physicalAcrylical3, physicalCryostat , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic4-->Cryo", physicalAcrylical4, physicalCryostat , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic1-->FC1v", physicalAcrylical1, physicalFC1_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic1-->FC2v", physicalAcrylical1, physicalFC2_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic1-->FC3v", physicalAcrylical1, physicalFC3_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic1-->FC4v", physicalAcrylical1, physicalFC4_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic1-->FC1h", physicalAcrylical1, physicalFC1_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic1-->FC2h", physicalAcrylical1, physicalFC2_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic1-->FC3h", physicalAcrylical1, physicalFC3_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic1-->FC4h", physicalAcrylical1, physicalFC4_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic2-->FC1v", physicalAcrylical2, physicalFC1_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic2-->FC2v", physicalAcrylical2, physicalFC2_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic1-->FC3v", physicalAcrylical2, physicalFC3_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic2-->FC4v", physicalAcrylical2, physicalFC4_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic2-->FC1h", physicalAcrylical2, physicalFC1_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic2-->FC2h", physicalAcrylical2, physicalFC2_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic2-->FC3h", physicalAcrylical2, physicalFC3_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic2-->FC4h", physicalAcrylical2, physicalFC4_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic3-->FC1v", physicalAcrylical3, physicalFC1_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic3-->FC2v", physicalAcrylical3, physicalFC2_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic3-->FC3v", physicalAcrylical3, physicalFC3_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic3-->FC4v", physicalAcrylical3, physicalFC4_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic3-->FC1h", physicalAcrylical3, physicalFC1_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic3-->FC2h", physicalAcrylical3, physicalFC2_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic3-->FC3h", physicalAcrylical3, physicalFC3_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic3-->FC4h", physicalAcrylical3, physicalFC4_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic4-->FC1v", physicalAcrylical4, physicalFC1_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic4-->FC2v", physicalAcrylical4, physicalFC2_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic4-->FC3v", physicalAcrylical4, physicalFC3_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic4-->FC4v", physicalAcrylical4, physicalFC4_v , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic4-->FC1h", physicalAcrylical4, physicalFC1_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic4-->FC2h", physicalAcrylical4, physicalFC2_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic4-->FC3h", physicalAcrylical4, physicalFC3_h , surface_acrylic_cryo );
-    new G4LogicalBorderSurface("Acrylic4-->FC4h", physicalAcrylical4, physicalFC4_h , surface_acrylic_cryo );
+    new G4LogicalBorderSurface("Acrylic1-->Cryo", physicalAcrylical1, physicalCryostat , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic2-->Cryo", physicalAcrylical2, physicalCryostat , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic3-->Cryo", physicalAcrylical3, physicalCryostat , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic4-->Cryo", physicalAcrylical4, physicalCryostat , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC1v", physicalAcrylical1, physicalFC1_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC2v", physicalAcrylical1, physicalFC2_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC3v", physicalAcrylical1, physicalFC3_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC4v", physicalAcrylical1, physicalFC4_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC1h", physicalAcrylical1, physicalFC1_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC2h", physicalAcrylical1, physicalFC2_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC3h", physicalAcrylical1, physicalFC3_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC4h", physicalAcrylical1, physicalFC4_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic2-->FC1v", physicalAcrylical2, physicalFC1_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic2-->FC2v", physicalAcrylical2, physicalFC2_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC3v", physicalAcrylical2, physicalFC3_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic2-->FC4v", physicalAcrylical2, physicalFC4_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic2-->FC1h", physicalAcrylical2, physicalFC1_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic2-->FC2h", physicalAcrylical2, physicalFC2_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic2-->FC3h", physicalAcrylical2, physicalFC3_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic2-->FC4h", physicalAcrylical2, physicalFC4_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC1v", physicalAcrylical3, physicalFC1_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC2v", physicalAcrylical3, physicalFC2_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC3v", physicalAcrylical3, physicalFC3_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC4v", physicalAcrylical3, physicalFC4_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC1h", physicalAcrylical3, physicalFC1_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC2h", physicalAcrylical3, physicalFC2_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC3h", physicalAcrylical3, physicalFC3_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC4h", physicalAcrylical3, physicalFC4_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC1v", physicalAcrylical4, physicalFC1_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC2v", physicalAcrylical4, physicalFC2_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC3v", physicalAcrylical4, physicalFC3_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC4v", physicalAcrylical4, physicalFC4_v , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC1h", physicalAcrylical4, physicalFC1_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC2h", physicalAcrylical4, physicalFC2_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC3h", physicalAcrylical4, physicalFC3_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC4h", physicalAcrylical4, physicalFC4_h , surface_FC_lar );
 
    
     //-----------------   Inserting PEN -------------------------------
@@ -647,6 +660,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("PEN3 -->LAr_Inside", physicalPEN3 , physicalInsideArgon, surface_PEN_lar );
     new G4LogicalBorderSurface("PEN4 -->LAr_Inside", physicalPEN4 , physicalInsideArgon, surface_PEN_lar );
 
+    new G4LogicalBorderSurface("LiquidArgonInside-->AnodeTop", physicalInsideArgon, physicalTopAnode , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->AnodeBottom", physicalInsideArgon, physicalBottomAnode , surface_cryo_lar );
+
     // ---- Creating Cathode grid -------- 
 
     auto config_Cathode = config["Cathode_Grid"];
@@ -721,7 +737,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     surface_pen_cryo-> SetType(dielectric_metal);
     surface_pen_cryo-> SetFinish(polished);
     G4MaterialPropertiesTable* mpt_PENMetal_Surface = new G4MaterialPropertiesTable();
-    mpt_PENMetal_Surface->AddProperty("REFLECTIVITY",{1,1}, {config_LAr["reflectivity_cryo"].get<double>(),config_LAr["reflectivity_cryo"].get<double>()},2);
+    mpt_PENMetal_Surface->AddProperty("REFLECTIVITY",{1,1}, {config_FC["reflectivity"].get<double>(),config_FC["reflectivity"].get<double>()},2);
     surface_pen_cryo->SetMaterialPropertiesTable(mpt_PENMetal_Surface);
 
     new G4LogicalBorderSurface("PEN1 --> Cathode Grid", physicalPEN1 , physicalCathode, surface_pen_cryo );

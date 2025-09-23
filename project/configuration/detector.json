@@ -35,7 +35,7 @@
             "Birks": 0.069        
         },
         "rayleigh_scattering": "lar_rayleigh.json",
-        "reflectivity_cryo": 0.98
+        "reflectivity_anode": 0.3
     },
     "FC":
     {
