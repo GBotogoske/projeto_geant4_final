@@ -36,12 +36,11 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     fGPS->SetParticlePosition(G4ThreeVector(0.,0.,0.));
     fGPS->GeneratePrimaryVertex(anEvent);
     */
-
     G4ParticleDefinition* photon = G4ParticleTable::GetParticleTable()->FindParticle("opticalphoton");
 
     for (int i = 0; i < 1; i++) 
     {
-        
+
         fParticleGun->SetParticleDefinition(photon);
         fParticleGun->SetParticleEnergy(9.7*eV);       // 128 nm
         fParticleGun->SetParticlePosition(G4ThreeVector(0.0*m,2.0*m,2.0*m));
@@ -52,6 +51,18 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
         G4double y = std::sin(theta)*std::sin(phi);
         G4double z = std::cos(theta);
         fParticleGun->SetParticleMomentumDirection(G4ThreeVector(x,y,z));
+
+        G4ThreeVector k = fParticleGun->GetParticleMomentumDirection();
+
+        // escolhe um vetor qualquer não paralelo a k
+        G4ThreeVector temp(1,0,0);
+        if (std::abs(k.dot(temp)) > 0.99) temp = G4ThreeVector(0,1,0);
+
+        // gera vetor perpendicular
+        G4ThreeVector pol = (temp - k*(k.dot(temp))).unit();
+
+        fParticleGun->SetParticlePolarization(pol);
+
         fParticleGun->SetParticlePolarization(G4ThreeVector(0,0,1));
 
         fParticleGun->GeneratePrimaryVertex(anEvent);

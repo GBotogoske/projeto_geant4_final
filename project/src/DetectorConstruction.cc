@@ -173,7 +173,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // --------------  ANODE ----------------------------
     G4Box* solidAnodeTemplate = new G4Box("Anode",0.5*cryostat_sizeX, 0.5*cryostatThickness, 0.5*cryostat_sizeZ);
     G4LogicalVolume* logicAnode = new G4LogicalVolume(solidAnodeTemplate,cryostat_mat,"Anode");
-    G4VPhysicalVolume* physicalTopAnode = new G4PVPlacement(0,G4ThreeVector(0,0.5*cryostat_sizeY-0.5*cryostatThickness,0),logicAnode,"AnodeUP",logicWorld,false,0,checkOverlaps);
+    G4VPhysicalVolume* physicalTopAnode = new G4PVPlacement(0,G4ThreeVector(0,0.5*cryostat_sizeY-0.5*cryostatThickness,0),logicAnode,"AnodeUp",logicWorld,false,0,checkOverlaps);
     G4VPhysicalVolume* physicalBottomAnode = new G4PVPlacement(0,G4ThreeVector(0,-(0.5*cryostat_sizeY-0.5*cryostatThickness),0),logicAnode,"AnodeDown",logicWorld,false,0,checkOverlaps);
 
 
@@ -239,23 +239,41 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     double barH_length_end = cryostat_sizeZ-2*d_cryo-FCv_sizeZ-2*cut_value1;
 
     std::vector<G4TwoVector> ellipse1;
-    int npoints = 200;
-    for (int i=0; i<npoints; i++) 
+    G4TwoVector lastPoint(1e30, 1e30); // inicializa com valor impossível
+
+    int npoints = 100;
+
+    for (int i = 0; i < npoints; i++) 
     {
         double phi = 2*CLHEP::pi*i/npoints;
-        double x = (barH_eixoX1/2.0)*cos(phi);
-        double y = (barH_eixoY1/2.0)*sin(phi);
-        y = std::max(y, -(cut_value1-barH_eixoY1/2));
-        ellipse1.push_back(G4TwoVector(x,y));
+        double x = (barH_eixoX1/2.0) * cos(phi);
+        double y = (barH_eixoY1/2.0) * sin(phi);
+        y = std::max(y, -(cut_value1 - barH_eixoY1/2));
+
+        G4TwoVector point(x, y);
+
+        // só adiciona se o ponto for diferente do anterior
+        if (point != lastPoint) {
+            ellipse1.push_back(point);
+            lastPoint = point;
+        }
     }
+
     std::vector<G4TwoVector> ellipse2;
-    for (int i=0; i<npoints; i++) 
+    lastPoint = G4TwoVector(1e30, 1e30);
+
+    for (int i = 0; i < npoints; i++) 
     {
         double phi = 2*CLHEP::pi*i/npoints;
-        double x = (barH_eixoX2/2.0)*cos(phi);
-        double y = (barH_eixoY2/2.0)*sin(phi);
-        y = std::max(y, -(cut_value2-barH_eixoY2/2));
-        ellipse2.push_back(G4TwoVector(x,y));
+        double x = (barH_eixoX2/2.0) * cos(phi);
+        double y = (barH_eixoY2/2.0) * sin(phi);
+        y = std::max(y, -(cut_value2 - barH_eixoY2/2));
+
+        G4TwoVector point(x, y);
+        if (point != lastPoint) {
+            ellipse2.push_back(point);
+            lastPoint = point;
+        }
     }
 
     auto solidBARh1 = new G4ExtrudedSolid("solidEllipse1", ellipse1,  barH_length/2, G4TwoVector(0,0), 1.0,   G4TwoVector(0,0), 1.0);  
