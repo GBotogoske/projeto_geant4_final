@@ -77,9 +77,9 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
         else if(checkAbsorption==true and G4StrUtil::contains(thisVolume,"sipmUV"))
         {   
             isUV=true;
-            eff = sipm_spectrum.get_effVIS();
-            E = sipm_spectrum.get_EVIS();
-            n = sipm_spectrum.getNVIS();
+            eff = sipm_spectrum.get_effUV();
+            E = sipm_spectrum.get_EUV();
+            n = sipm_spectrum.getNUV();
         }
         else
         {
