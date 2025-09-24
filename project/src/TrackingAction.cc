@@ -1,4 +1,8 @@
 #include "TrackingAction.hh"
 
-// única definição do mapa global
-std::map<G4int, G4ThreeVector> trackBirthMap;
+std::map<G4int, TrackInfo> trackMap;
+
+void MyTrackingAction::PreUserTrackingAction(const G4Track* track) 
+{
+    trackMap[track->GetTrackID()] = { track->GetVertexPosition(), track->GetParentID() };
+}

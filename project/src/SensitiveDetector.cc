@@ -124,11 +124,13 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
         G4int parentID = track->GetParentID();
         G4ThreeVector motherPos;
 
-        if (parentID == 0) {
-            motherPos = track->GetVertexPosition(); // já é primária
-        } else {
-            motherPos = trackBirthMap[parentID]; // posição de nascimento da mãe
-        }   
+        // Sobe na árvore de pais até encontrar a primária original
+        while(trackMap[parentID].parentID != 0) 
+        {
+            parentID = trackMap[parentID].parentID;
+        }
+
+        motherPos = trackMap[parentID].vertex;  
         double X = motherPos.getX()/m;
         double Y = motherPos.getY()/m;
         double Z = motherPos.getZ()/m;

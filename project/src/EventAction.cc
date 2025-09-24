@@ -38,7 +38,7 @@ EventAction::GetHitsCollection(G4int HCID, const G4Event* event) const
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 void EventAction::BeginOfEventAction(const G4Event* event)
 {
-    trackBirthMap.clear();
+    trackMap.clear();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
