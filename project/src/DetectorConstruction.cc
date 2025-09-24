@@ -239,9 +239,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     double barH_length_end = cryostat_sizeZ-2*d_cryo-FCv_sizeZ-2*cut_value1;
 
     std::vector<G4TwoVector> ellipse1;
-    G4TwoVector lastPoint(1e30, 1e30); // inicializa com valor impossível
+    double lastY=1e30; // inicializa com valor impossível
 
-    int npoints = 100;
+    int npoints = 20;
 
     for (int i = 0; i < npoints; i++) 
     {
@@ -253,14 +253,14 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
         G4TwoVector point(x, y);
 
         // só adiciona se o ponto for diferente do anterior
-        if (point != lastPoint) {
+        if (lastY != y) {
             ellipse1.push_back(point);
-            lastPoint = point;
+            lastY = y;
         }
     }
 
     std::vector<G4TwoVector> ellipse2;
-    lastPoint = G4TwoVector(1e30, 1e30);
+    lastY = 1e30;
 
     for (int i = 0; i < npoints; i++) 
     {
@@ -270,9 +270,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
         y = std::max(y, -(cut_value2 - barH_eixoY2/2));
 
         G4TwoVector point(x, y);
-        if (point != lastPoint) {
+        if (lastY != y) {
             ellipse2.push_back(point);
-            lastPoint = point;
+            lastY = y;
         }
     }
 
@@ -326,7 +326,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4LogicalVolume* LogicalFCh_wall = new G4LogicalVolume(FCh_united,FC_mat,"FC");
     G4LogicalVolume* LogicalFCh_end = new G4LogicalVolume(FCh_united_end,FC_mat,"FC");
     G4VisAttributes* visFC = new G4VisAttributes(G4Colour(0.5, 0.5, 0.5)); 
-    visFC->SetForceSolid(true); 
+    visFC->SetForceSolid(false); 
     LogicalFCv_wall->SetVisAttributes(visFC);
     LogicalFCv_end->SetVisAttributes(visFC);
     LogicalFCh_wall->SetVisAttributes(visFC);
@@ -687,17 +687,15 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     double cathode_X = pen_X - 2*pen_thickness;
     double cathode_Z = pen_Z - 2*pen_thickness;
-    double cathode_hole_X = config_Cathode["hole"].get<double>()*cm;
-    double cathode_hole_Y = config_Cathode["hole"].get<double>()*cm;
+    double cathode_hole_X = config_Cathode["hole_x"].get<double>()*cm;
+    double cathode_hole_Y = config_Cathode["hole_y"].get<double>()*cm;
     double cathode_separation = config_Cathode["separation"].get<double>()*cm;
 
     auto cathode = new G4Box("Cathode", 0.5*cathode_X, 0.5*cryostatThickness, 0.5*cathode_Z);
     auto logicalCathode = new G4LogicalVolume(cathode, FC_mat, "Cathode");
-    auto cathodehole = new G4Box("Cathode_Hole", 0.5*cathode_hole_X, 0.5*cryostatThickness, 0.5*cathode_hole_Y);
-    auto logicalHole = new G4LogicalVolume(cathodehole, lar_mat_inside, "Cathode_Hole");
-    int n_cathode_x = (cathode_X+cathode_separation)/(cathode_hole_X+cathode_separation);
-    int n_cathode_y = (cathode_Z+cathode_separation)/(cathode_hole_Y+cathode_separation);
+    G4VPhysicalVolume* physicalCathode = new G4PVPlacement(0, G4ThreeVector(0,0,0), logicalCathode, "Cathode", logicInsideArgon, false, 0);
 
+    
     // ----------- Inserting VIKUITI over and under cathode -------------
 
     auto Reflector_thickness = config_Reflector["thickness"].get<double>()*cm;
@@ -711,17 +709,48 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     visReflector->SetForceSolid(true);
     logicReflector->SetVisAttributes(visReflector); 
 
-    G4VPhysicalVolume* physicalReflectorTop = new G4PVPlacement(0,G4ThreeVector(0,(cryostatThickness+Reflector_thickness)/2),logicReflector,"My_Reflector",logicInsideArgon,true,1,checkOverlaps);
-    G4VPhysicalVolume* physicalReflectorBottom = new G4PVPlacement(0,G4ThreeVector(0,-(cryostatThickness+Reflector_thickness)/2),logicReflector,"My_Reflector",logicInsideArgon,true,2,checkOverlaps);
+    G4VPhysicalVolume* physicalReflectorTop = new G4PVPlacement(0,G4ThreeVector(0,(cryostatThickness+Reflector_thickness)/2,0)
+        ,logicReflector,"My_Reflector",logicInsideArgon,true,1,checkOverlaps);
+    G4VPhysicalVolume* physicalReflectorBottom = new G4PVPlacement(0,G4ThreeVector(0,-(cryostatThickness+Reflector_thickness)/2,0)
+        ,logicReflector,"My_Reflector",logicInsideArgon,true,2,checkOverlaps);
+
+      //-------------- Inserting PEN over on top of both Reflector ----------
+
+    auto Pen_cathode = new G4Box("PEN_cathode", 0.5*cathode_X, 0.5*pen_thickness, 0.5*cathode_Z);
+    G4LogicalVolume* logicPENCathode = new G4LogicalVolume(Pen_cathode,PEN_mat,"PEN_Cathode");
+
+    logicPENCathode->SetVisAttributes(visPEN); 
+
+    G4VPhysicalVolume* physicalPENTop = new G4PVPlacement(0,G4ThreeVector(0,(cryostatThickness+2*Reflector_thickness+pen_thickness)/2,0)
+        ,logicPENCathode,"PEN_CATHODE",logicInsideArgon,true,1,checkOverlaps);
+    G4VPhysicalVolume* physicalPENBottom = new G4PVPlacement(0,G4ThreeVector(0,-(cryostatThickness+2*Reflector_thickness+pen_thickness)/2,0)
+        ,logicPENCathode,"PEN_CATHODE",logicInsideArgon,true,2,checkOverlaps);
 
     // ---- Creating Cathode grid -------- PART 2 --- ADDING HOLES
 
-    G4VPhysicalVolume* physicalCathode = new G4PVPlacement(0, G4ThreeVector(0,0,0), logicalCathode, "Cathode", logicInsideArgon, false, 0);
+    auto cathodehole = new G4Box("Cathode_Hole", 0.5*cathode_hole_X, 0.5*cryostatThickness, 0.5*cathode_hole_Y);
+    auto logicalHole = new G4LogicalVolume(cathodehole, lar_mat_inside, "Cathode_Hole");
+    int n_cathode_x = (cathode_X+cathode_separation)/(cathode_hole_X+cathode_separation);
+    int n_cathode_y = (cathode_Z+cathode_separation)/(cathode_hole_Y+cathode_separation);
 
-    G4VisAttributes* visArgon = new G4VisAttributes();
-    visArgon->SetVisibility(false);
+    auto hole_percentage = config_PEN["hole_size_percentage"].get<double>();
+    double pen_hole_X = sqrt(hole_percentage)*cathode_hole_X;
+    double pen_hole_Y = sqrt(hole_percentage)*cathode_hole_Y;
+
+    auto Reflectorhole = new G4Box("Reflector_Hole", 0.5*pen_hole_X, 0.5*(Reflector_thickness), 0.5*pen_hole_Y);
+    auto logicalReflectorHole = new G4LogicalVolume(Reflectorhole, lar_mat_inside, "Reflector_Hole");
+
+    auto PENhole = new G4Box("Reflector_Hole", 0.5*pen_hole_X, 0.5*(pen_thickness), 0.5*pen_hole_Y);
+    auto logicalPENHole = new G4LogicalVolume(PENhole, lar_mat_inside, "PEN_Hole");
+ 
+    G4VisAttributes* visArgon = new G4VisAttributes(G4Colour(0.7,0.85,0.9));
+    visArgon->SetVisibility(true);
+    visArgon->SetForceSolid(true);
 
     logicalHole->SetVisAttributes(visArgon); 
+    logicalReflectorHole->SetVisAttributes(visArgon); 
+    logicalPENHole->SetVisAttributes(visArgon); 
+
     for (int ix = 0; ix < n_cathode_x; ix++)
     {
         for (int iz = 0; iz < n_cathode_y; iz++) 
@@ -730,10 +759,35 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
             double z_pos = (iz - (n_cathode_y-1)/2.0)*(cathode_hole_Y + cathode_separation);
             G4ThreeVector pos(x_pos, 0, z_pos);
 
-            auto physicalHole = new G4PVPlacement(0, pos, logicalHole,"Cathode_Hole_PV", logicalCathode, false, ix*n_cathode_y + iz);
-            new G4LogicalBorderSurface("LAr_in_Hole-->Cathode", physicalHole, physicalCathode, surface_FC_lar );
-            new G4LogicalBorderSurface("LAr_in_Hole-->Reflector1", physicalHole, physicalReflectorTop, surface_cryo_lar );
-            new G4LogicalBorderSurface("LAr_in_Hole-->Reflector2", physicalHole, physicalReflectorTop, surface_cryo_lar );
+            int number = ix*n_cathode_y + iz;
+            auto physicalHole = new G4PVPlacement(0, pos, logicalHole,"Cathode_Hole_PV", logicalCathode, true, ix*n_cathode_y + iz,false);
+            auto physicalHoleReflector = new G4PVPlacement(0, pos ,logicalReflectorHole,"Reflector_Hole_PV", logicReflector, true, ix*n_cathode_y + iz,false);
+            auto physicalHolePEN = new G4PVPlacement(0, pos ,logicalPENHole,"PEN_Hole_PV", logicPENCathode, true, ix*n_cathode_y + iz,false);
+
+            new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->Cathode", physicalHole, physicalCathode, surface_FC_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->Reflector1", physicalHole, physicalReflectorTop, surface_cryo_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->Reflector2", physicalHole, physicalReflectorBottom, surface_cryo_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->PEN1", physicalHole, physicalPENTop, surface_PEN_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->PEN2", physicalHole, physicalPENBottom, surface_PEN_lar );
+            new G4LogicalBorderSurface("PEN1-->LAr_in_Hole_" + std::to_string(number) , physicalPENTop,  physicalHole, surface_PEN_lar );
+            new G4LogicalBorderSurface("PEN2-->LAr_in_Hole_" + std::to_string(number) , physicalPENBottom,  physicalHole, surface_PEN_lar );
+
+            new G4LogicalBorderSurface("LAr_in_Hole_Ref_" + std::to_string(number) + "-->Cathode", physicalHoleReflector, physicalCathode, surface_FC_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_Ref_" + std::to_string(number) + "-->Reflector1", physicalHoleReflector, physicalReflectorTop, surface_cryo_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_Ref_" + std::to_string(number) + "-->Reflector2", physicalHoleReflector, physicalReflectorBottom, surface_cryo_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_Ref_" + std::to_string(number) + "-->PEN1", physicalHoleReflector, physicalPENTop, surface_PEN_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_Ref_" + std::to_string(number) + "-->PEN2", physicalHoleReflector, physicalPENBottom, surface_PEN_lar );
+            new G4LogicalBorderSurface("PEN1-->LAr_in_Hole_Ref_" + std::to_string(number) , physicalPENTop,  physicalHoleReflector, surface_PEN_lar );
+            new G4LogicalBorderSurface("PEN2-->LAr_in_Hole_Ref_" + std::to_string(number) , physicalPENBottom,  physicalHoleReflector, surface_PEN_lar );
+
+            new G4LogicalBorderSurface("LAr_in_Hole_PEN_" + std::to_string(number) + "-->Cathode", physicalHolePEN, physicalCathode, surface_FC_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_PEN_" + std::to_string(number) + "-->Reflector1", physicalHolePEN, physicalReflectorTop, surface_cryo_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_PEN_" + std::to_string(number) + "-->Reflector2", physicalHolePEN, physicalReflectorBottom, surface_cryo_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_PEN_" + std::to_string(number) + "-->PEN1", physicalHolePEN, physicalPENTop, surface_PEN_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_PEN_" + std::to_string(number) + "-->PEN2", physicalHolePEN, physicalPENBottom, surface_PEN_lar );
+            new G4LogicalBorderSurface("PEN1-->LAr_in_Hole_PEN_" + std::to_string(number) , physicalPENTop,  physicalHolePEN, surface_PEN_lar );
+            new G4LogicalBorderSurface("PEN2-->LAr_in_Hole_PEN_" + std::to_string(number) , physicalPENBottom,  physicalHolePEN, surface_PEN_lar );
+
         }
     }
     new G4LogicalBorderSurface("LiquidArgon-->Cathode", physicalWorld, physicalCathode , surface_FC_lar );
@@ -744,7 +798,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("LiquidArgonInside-->ReflectorB", physicalInsideArgon, physicalReflectorBottom , surface_cryo_lar );
 
     G4VisAttributes* visCathode = new G4VisAttributes(G4Colour(0.9,0.9,0.9));
-    //visCathode->SetForceSolid(true);
+    visCathode->SetForceSolid(true);
     //visCathode->SetVisibility(false);
 
     logicalCathode->SetVisAttributes(visCathode); 
@@ -771,19 +825,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("PEN2 --> ReflectorG", physicalPEN2 , physicalReflectorBottom, surface_cryo_lar );
     new G4LogicalBorderSurface("PEN3 --> ReflectorG", physicalPEN3 , physicalReflectorBottom, surface_cryo_lar );
     new G4LogicalBorderSurface("PEN4 --> ReflectorG", physicalPEN4 , physicalReflectorBottom, surface_cryo_lar );
-    
-
-    //-------------- Inserting PEN over on top of both Reflector ----------
-
-    auto Pen_cathode = new G4Box("PEN_cathode", 0.5*cathode_X, 0.5*pen_thickness, 0.5*cathode_Z);
-    G4LogicalVolume* logicPENCathode = new G4LogicalVolume(Pen_cathode,PEN_mat,"PEN_Cathode");
-
-    logicPENCathode->SetVisAttributes(visPEN); 
-
-    G4VPhysicalVolume* physicalPENTop = new G4PVPlacement(0,G4ThreeVector(0,(cryostatThickness+2*Reflector_thickness+pen_thickness)/2,0)
-        ,logicPENCathode,"PEN_TOP",logicInsideArgon,true,1,checkOverlaps);
-    G4VPhysicalVolume* physicalPENBottom = new G4PVPlacement(0,G4ThreeVector(0,-(cryostatThickness+2*Reflector_thickness+pen_thickness)/2,0)
-        ,logicPENCathode,"PEN_BOTTOM",logicInsideArgon,true,2,checkOverlaps);
 
     new G4LogicalBorderSurface("PENTop --> ReflectorT", physicalPENTop , physicalReflectorTop, surface_cryo_lar );
     new G4LogicalBorderSurface("PENTop --> LAr", physicalPENTop , physicalWorld, surface_PEN_lar );

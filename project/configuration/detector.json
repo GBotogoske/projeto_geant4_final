@@ -58,7 +58,8 @@
     },
     "Cathode_Grid":
     {
-        "hole": 60,
+        "hole_x": 60,
+        "hole_y": 60,
         "separation": 5
     },
     "Acrylic":
@@ -82,11 +83,12 @@
         "abs_length": "pen_absorption.json",
         "emissium": "pen_emissium.json",
         "time_constant": 25.0,
-        "efficiency": 0.5
+        "efficiency": 0.5,
+        "hole_size_percentage": 0.5
     },
     "Reflector":
     {
-        "thickness": 1,
+        "thickness": 0.01,
         "material": "G4_KAPTON",
         "reflectivity": "vikuiti_reflectance.json"
     },
