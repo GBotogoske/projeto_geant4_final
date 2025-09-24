@@ -14,9 +14,11 @@
 #include "G4OpticalPhoton.hh"
 #include "G4OpBoundaryProcess.hh"
 #include "G4GeometryTolerance.hh"
+#include "TrackingAction.hh"
 #include <math.h>
 
 using namespace std;
+
 
 static const G4double GeometricalTolerance = G4GeometryTolerance::GetInstance()->GetSurfaceTolerance();
 static const G4double h = CLHEP::h_Planck/((CLHEP::eV)*(CLHEP::ns));
@@ -85,6 +87,7 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
         {
             return true;
         }
+       
         auto Ephoton = aStep->GetTrack()->GetTotalEnergy();
         if(Ephoton<=E[0])
         {
@@ -116,6 +119,19 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
     }
     if(pDetected>=1)
     {
+
+        G4Track* track = aStep->GetTrack();
+        G4int parentID = track->GetParentID();
+        G4ThreeVector motherPos;
+
+        if (parentID == 0) {
+            motherPos = track->GetVertexPosition(); // já é primária
+        } else {
+            motherPos = trackBirthMap[parentID]; // posição de nascimento da mãe
+        }   
+        double X = motherPos.getX()/m;
+        double Y = motherPos.getY()/m;
+        double Z = motherPos.getZ()/m;
         if(isVIS)
         {
             OneHit *aHit = new OneHit();
@@ -123,6 +139,9 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
             G4int TotP_VIS = SensitiveDetector::GetCounterStatus_VIS();
             aHit->SetPhotonCounter_VIS(TotP_VIS);
             aHit->SetPhotonCounter_UV(0);
+            aHit->SetX(X);
+            aHit->SetY(Y);
+            aHit->SetZ(Z);
             fHitCollection->insert(aHit);
             SensitiveDetector::PrintSDMemoryStatus();
             SensitiveDetector::CleanSDMemory();
@@ -135,6 +154,9 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
             G4int TotP_UV = SensitiveDetector::GetCounterStatus_UV();
             aHit->SetPhotonCounter_VIS(0);
             aHit->SetPhotonCounter_UV(TotP_UV);
+            aHit->SetX(X);
+            aHit->SetY(Y);
+            aHit->SetZ(Z);
             fHitCollection->insert(aHit);
             SensitiveDetector::PrintSDMemoryStatus();
             SensitiveDetector::CleanSDMemory();

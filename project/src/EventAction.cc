@@ -5,6 +5,8 @@
 #include "G4SDManager.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4AnalysisManager.hh"
+#include "TrackingAction.hh"
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -36,7 +38,7 @@ EventAction::GetHitsCollection(G4int HCID, const G4Event* event) const
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 void EventAction::BeginOfEventAction(const G4Event* event)
 {
-   
+    trackBirthMap.clear();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -55,13 +57,22 @@ void EventAction::EndOfEventAction(const G4Event* event)
     {
             G4int PhotonDetected_UV = 0;
             G4int PhotonDetected_VIS = 0;
+            double X=0.0;
+            double Y=0.0;
+            double Z=0.0;
 
             PhotonDetected_UV = (*HC)[0]->GetPhotonCounter_UV();
             PhotonDetected_VIS = (*HC)[0]->GetPhotonCounter_VIS();
-
+            X = (*HC)[0]->GetX();
+            Y = (*HC)[0]->GetY();
+            Z = (*HC)[0]->GetZ();
+            
             analysisManager->FillNtupleIColumn(0,0,  nEvt);
             analysisManager->FillNtupleDColumn(0,1,  PhotonDetected_VIS);
             analysisManager->FillNtupleDColumn(0,2,  PhotonDetected_UV);
+            analysisManager->FillNtupleDColumn(0,3,  X);
+            analysisManager->FillNtupleDColumn(0,4,  Y);
+            analysisManager->FillNtupleDColumn(0,5,  Z);
             analysisManager->AddNtupleRow(0);
     }
 }

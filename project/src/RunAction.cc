@@ -26,6 +26,9 @@ RunAction::RunAction(): G4UserRunAction(), fOutputFileName("./Data")
     analysisManager->CreateNtupleIColumn(0,"eventID");
     analysisManager->CreateNtupleDColumn(0,"PhotonDetectedVIS");
     analysisManager->CreateNtupleDColumn(0,"PhotonDetectedUV");
+    analysisManager->CreateNtupleDColumn(0,"X");
+    analysisManager->CreateNtupleDColumn(0,"Y");
+    analysisManager->CreateNtupleDColumn(0,"Z");
     analysisManager->FinishNtuple(0);
 
 }

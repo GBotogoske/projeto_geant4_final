@@ -94,7 +94,7 @@
     },
     "SiPM":
     { 
-        "refraction_index": 1.5,
+        "refraction_index": 1.55,
         "abs_length": 0.0000001,
         "efficiency_UV": "efficiency_UV.json",
         "efficiency_VIS": "efficiency_VIS.json",
