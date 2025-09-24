@@ -88,20 +88,20 @@
     },
     "Reflector":
     {
-        "thickness": 0.01,
+        "thickness": 0.1,
         "material": "G4_KAPTON",
         "reflectivity": "vikuiti_reflectance.json"
     },
     "SiPM":
     { 
-        "refraction_index": 1.55,
+        "refraction_index": 1.5,
         "abs_length": 0.0000001,
         "efficiency_UV": "efficiency_UV.json",
         "efficiency_VIS": "efficiency_VIS.json",
         "size": 5,
         "thickness": 0.8,
         "distance_vertical": 100.0,
-        "distance_horizontal": 100.0,
+        "distance_horizontal": 77.0,
         "map_ldu": [["V","V","V","V"],
                     ["V","V","U","V"],
                     ["V","V","V","V"],

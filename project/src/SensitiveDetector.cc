@@ -114,21 +114,40 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
             pDetected +=1;
         }
     }
-    if(isVIS)
+    if(pDetected>=1)
     {
-        SensitiveDetector::SetCounterStatus_VIS(pDetected);
+        if(isVIS)
+        {
+            OneHit *aHit = new OneHit();
+            SensitiveDetector::SetCounterStatus_VIS(pDetected);
+            G4int TotP_VIS = SensitiveDetector::GetCounterStatus_VIS();
+            aHit->SetPhotonCounter_VIS(TotP_VIS);
+            aHit->SetPhotonCounter_UV(0);
+            fHitCollection->insert(aHit);
+            SensitiveDetector::PrintSDMemoryStatus();
+            SensitiveDetector::CleanSDMemory();
+
+        }
+        if(isUV)
+        {
+            OneHit *aHit = new OneHit();
+            SensitiveDetector::SetCounterStatus_UV(pDetected);
+            G4int TotP_UV = SensitiveDetector::GetCounterStatus_UV();
+            aHit->SetPhotonCounter_VIS(0);
+            aHit->SetPhotonCounter_UV(TotP_UV);
+            fHitCollection->insert(aHit);
+            SensitiveDetector::PrintSDMemoryStatus();
+            SensitiveDetector::CleanSDMemory();
+        }
     }
-    if(isUV)
-    {
-        SensitiveDetector::SetCounterStatus_UV(pDetected);
-    }
+    
     
     return true;
 }
 
 void SensitiveDetector::EndOfEvent(G4HCofThisEvent*)
 {
-    //Fill the hits
+   /*  //Fill the hits
     OneHit *aHit = new OneHit();
     G4int TotP_VIS = SensitiveDetector::GetCounterStatus_VIS();
     G4int TotP_UV = SensitiveDetector::GetCounterStatus_UV();
@@ -139,7 +158,7 @@ void SensitiveDetector::EndOfEvent(G4HCofThisEvent*)
     fHitCollection->insert(aHit);
 
     SensitiveDetector::PrintSDMemoryStatus();
-    SensitiveDetector::CleanSDMemory();
+    SensitiveDetector::CleanSDMemory(); */
 }
 
 
