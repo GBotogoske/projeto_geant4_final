@@ -728,8 +728,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     // ---- Creating Cathode grid -------- PART 2 --- ADDING HOLES
 
-    auto cathodehole = new G4Box("Cathode_Hole", 0.5*cathode_hole_X, 0.5*cryostatThickness, 0.5*cathode_hole_Y);
-    auto logicalHole = new G4LogicalVolume(cathodehole, lar_mat_inside, "Cathode_Hole");
+    auto cathodehole = new G4Box("Cathode_Hole_argon", 0.5*cathode_hole_X, 0.5*cryostatThickness, 0.5*cathode_hole_Y);
+    auto logicalHole = new G4LogicalVolume(cathodehole, lar_mat_inside, "Cathode_Hole_argon");
     int n_cathode_x = (cathode_X+cathode_separation)/(cathode_hole_X+cathode_separation);
     int n_cathode_y = (cathode_Z+cathode_separation)/(cathode_hole_Y+cathode_separation);
 
@@ -737,11 +737,11 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     double pen_hole_X = sqrt(hole_percentage)*cathode_hole_X;
     double pen_hole_Y = sqrt(hole_percentage)*cathode_hole_Y;
 
-    auto Reflectorhole = new G4Box("Reflector_Hole", 0.5*pen_hole_X, 0.5*(Reflector_thickness), 0.5*pen_hole_Y);
-    auto logicalReflectorHole = new G4LogicalVolume(Reflectorhole, lar_mat_inside, "Reflector_Hole");
+    auto Reflectorhole = new G4Box("Reflector_Hole_argon", 0.5*pen_hole_X, 0.5*(Reflector_thickness), 0.5*pen_hole_Y);
+    auto logicalReflectorHole = new G4LogicalVolume(Reflectorhole, lar_mat_inside, "Reflector_Hole_argon");
 
-    auto PENhole = new G4Box("Reflector_Hole", 0.5*pen_hole_X, 0.5*(pen_thickness), 0.5*pen_hole_Y);
-    auto logicalPENHole = new G4LogicalVolume(PENhole, lar_mat_inside, "PEN_Hole");
+    auto PENhole = new G4Box("Reflector_Hole_argon", 0.5*pen_hole_X, 0.5*(pen_thickness), 0.5*pen_hole_Y);
+    auto logicalPENHole = new G4LogicalVolume(PENhole, lar_mat_inside, "PEN_Hole_argon");
  
     G4VisAttributes* visArgon = new G4VisAttributes(G4Colour(0.7,0.85,0.9));
     visArgon->SetVisibility(true);
@@ -760,9 +760,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
             G4ThreeVector pos(x_pos, 0, z_pos);
 
             int number = ix*n_cathode_y + iz;
-            auto physicalHole = new G4PVPlacement(0, pos, logicalHole,"Cathode_Hole_PV", logicalCathode, true, ix*n_cathode_y + iz,false);
-            auto physicalHoleReflector = new G4PVPlacement(0, pos ,logicalReflectorHole,"Reflector_Hole_PV", logicReflector, true, ix*n_cathode_y + iz,false);
-            auto physicalHolePEN = new G4PVPlacement(0, pos ,logicalPENHole,"PEN_Hole_PV", logicPENCathode, true, ix*n_cathode_y + iz,false);
+            auto physicalHole = new G4PVPlacement(0, pos, logicalHole,"Cathode_Hole_argon", logicalCathode, true, ix*n_cathode_y + iz,false);
+            auto physicalHoleReflector = new G4PVPlacement(0, pos ,logicalReflectorHole,"Reflector_Hole_argon", logicReflector, true, ix*n_cathode_y + iz,false);
+            auto physicalHolePEN = new G4PVPlacement(0, pos ,logicalPENHole,"PEN_Hole_argon", logicPENCathode, true, ix*n_cathode_y + iz,false);
 
             new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->Cathode", physicalHole, physicalCathode, surface_FC_lar );
             new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->Reflector1", physicalHole, physicalReflectorTop, surface_cryo_lar );

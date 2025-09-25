@@ -73,7 +73,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
         do 
         {
             // Sorteia posição dentro do criostato
-            x_pos = (-1 + 2*G4UniformRand())*cryostat_sizeX/2;
+            x_pos = 0;// (-1 + 2*G4UniformRand())*cryostat_sizeX/2;
             y_pos = (-1 + 2*G4UniformRand())*cryostat_sizeY/2;
             z_pos = (-1 + 2*G4UniformRand())*cryostat_sizeZ/2;
             pos = G4ThreeVector(x_pos, y_pos, z_pos);
