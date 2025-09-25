@@ -120,9 +120,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     //lar_mat->GetIonisation()->SetBirksConstant(scint_lar["Birks"].get<double>()*cm/MeV); // se comentar essa linha, o valor eh o default do argonio liquido
     lar_mat->SetMaterialPropertiesTable(mpt_LAr);
 
-    G4Box* solidWorld = new G4Box("World",0.5*world_sizeX, 0.5*world_sizeY, 0.5*world_sizeZ);
-    G4LogicalVolume* logicWorld = new G4LogicalVolume(solidWorld,lar_mat,"World");
-    G4VPhysicalVolume* physicalWorld = new G4PVPlacement(0,G4ThreeVector(),logicWorld,"World",0,false,0,checkOverlaps);
+    G4Box* solidWorld = new G4Box("World_argon",0.5*world_sizeX, 0.5*world_sizeY, 0.5*world_sizeZ);
+    G4LogicalVolume* logicWorld = new G4LogicalVolume(solidWorld,lar_mat,"World_argon");
+    G4VPhysicalVolume* physicalWorld = new G4PVPlacement(0,G4ThreeVector(),logicWorld,"World_argon",0,false,0,checkOverlaps);
 
     // ----- Cryostat ----
 

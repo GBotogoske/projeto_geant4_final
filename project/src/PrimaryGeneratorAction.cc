@@ -11,6 +11,16 @@
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
 
+#include "G4TransportationManager.hh"
+#include "G4Navigator.hh"
+#include "G4VPhysicalVolume.hh"
+
+#include <fstream>
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+
+
+
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 PrimaryGeneratorAction::PrimaryGeneratorAction()
@@ -18,7 +28,14 @@ PrimaryGeneratorAction::PrimaryGeneratorAction()
   fGPS(0),fParticleGun(0)
 {
     //fGPS  = new G4GeneralParticleSource();
+    json config;
     fParticleGun = new G4ParticleGun(1);
+    std::ifstream f("../configuration/detector.json");
+    f >> config;
+    auto config_cryostat = config["cryostat"];
+    this->cryostat_sizeX = config_cryostat["size"][0].get<double>()*cm;
+    this->cryostat_sizeY = config_cryostat["size"][1].get<double>()*cm;
+    this->cryostat_sizeZ = config_cryostat["size"][2].get<double>()*cm;
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -32,6 +49,7 @@ PrimaryGeneratorAction::~PrimaryGeneratorAction()
 
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 {
+    
     /*
     fGPS->SetParticlePosition(G4ThreeVector(0.,0.,0.));
     fGPS->GeneratePrimaryVertex(anEvent);
@@ -42,8 +60,33 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     {
 
         fParticleGun->SetParticleDefinition(photon);
-        fParticleGun->SetParticleEnergy(9.7*eV);       // 128 nm
-        fParticleGun->SetParticlePosition(G4ThreeVector(0.0*m,2.0*m,2.0*m));
+        fParticleGun->SetParticleEnergy(9.7*eV);       
+
+        G4double x_pos = 0;//(-1+2*G4UniformRand())*cryostat_sizeX/2;
+        G4double y_pos = 2*m; //(-1+2*G4UniformRand())*cryostat_sizeY/2;
+        G4double z_pos = 2*m; //(-1+2*G4UniformRand())*cryostat_sizeZ/2;
+
+        G4String targetVolumeName = "argon";
+        G4ThreeVector pos;
+        G4VPhysicalVolume* volume = nullptr;
+
+        do 
+        {
+            // Sorteia posição dentro do criostato
+            x_pos = (-1 + 2*G4UniformRand())*cryostat_sizeX/2;
+            y_pos = (-1 + 2*G4UniformRand())*cryostat_sizeY/2;
+            z_pos = (-1 + 2*G4UniformRand())*cryostat_sizeZ/2;
+            pos = G4ThreeVector(x_pos, y_pos, z_pos);
+
+            // Descobre qual volume contém essa posição
+            volume = G4TransportationManager::GetTransportationManager()
+                        ->GetNavigatorForTracking()
+                        ->LocateGlobalPointAndSetup(pos);
+
+                //G4cout << volume->GetName() << std::endl;       
+        }while (!volume || std::string(volume->GetName()).find(targetVolumeName) == std::string::npos);
+
+        fParticleGun->SetParticlePosition(G4ThreeVector(x_pos,y_pos,z_pos));
 
         G4double theta = std::acos(1 - 2*G4UniformRand()); // de 0 a pi
         G4double phi   = 2*M_PI*G4UniformRand();           // de 0 a 2pi
@@ -62,8 +105,6 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
         G4ThreeVector pol = (temp - k*(k.dot(temp))).unit();
 
         fParticleGun->SetParticlePolarization(pol);
-
-        fParticleGun->SetParticlePolarization(G4ThreeVector(0,0,1));
 
         fParticleGun->GeneratePrimaryVertex(anEvent);
     }

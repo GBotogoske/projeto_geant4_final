@@ -23,6 +23,10 @@ class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
   private:
     G4GeneralParticleSource*  fGPS;
     G4ParticleGun* fParticleGun;
+    G4double cryostat_sizeX;
+    G4double cryostat_sizeY;
+    G4double cryostat_sizeZ;
+
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
