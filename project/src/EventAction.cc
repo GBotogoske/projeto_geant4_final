@@ -60,6 +60,7 @@ void EventAction::EndOfEventAction(const G4Event* event)
             double X=0.0;
             double Y=0.0;
             double Z=0.0;
+            int iD= (*HC)[0]->GetDetectorID();
 
             PhotonDetected_UV = (*HC)[0]->GetPhotonCounter_UV();
             PhotonDetected_VIS = (*HC)[0]->GetPhotonCounter_VIS();
@@ -73,6 +74,7 @@ void EventAction::EndOfEventAction(const G4Event* event)
             analysisManager->FillNtupleDColumn(0,3,  X);
             analysisManager->FillNtupleDColumn(0,4,  Y);
             analysisManager->FillNtupleDColumn(0,5,  Z);
+            analysisManager->FillNtupleDColumn(0,6,  iD);
             analysisManager->AddNtupleRow(0);
     }
 }

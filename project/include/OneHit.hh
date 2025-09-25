@@ -20,12 +20,15 @@ class OneHit : public G4VHit{
     virtual ~OneHit();
 
     // methods from base class
-    
+
     void SetPhotonCounter_VIS (G4int p)                       {fPhotonCounter_VIS = p;};
     G4int GetPhotonCounter_VIS()                   const { return fPhotonCounter_VIS;};
 
     void SetPhotonCounter_UV (G4int p)                       {fPhotonCounter_UV = p;};
     G4int GetPhotonCounter_UV()                   const { return fPhotonCounter_UV;};
+
+    void SetDetectorID(G4int id) {fDetectorID = id;};
+    G4int GetDetectorID() const { return fDetectorID;};
 
     void SetX (G4double x)                       {fX=x;};
     G4double GetX()                   const { return fX;};
@@ -41,6 +44,7 @@ class OneHit : public G4VHit{
     G4double fX;
     G4double fY;
     G4double fZ;
+    G4int fDetectorID;
 
   };
 

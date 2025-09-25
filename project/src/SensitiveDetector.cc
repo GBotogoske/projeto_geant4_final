@@ -134,6 +134,9 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
         double X = motherPos.getX()/m;
         double Y = motherPos.getY()/m;
         double Z = motherPos.getZ()/m;
+
+        int idDetector = aStep->GetTrack()->GetVolume()->GetCopyNo();
+
         if(isVIS)
         {
             OneHit *aHit = new OneHit();
@@ -144,6 +147,7 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
             aHit->SetX(X);
             aHit->SetY(Y);
             aHit->SetZ(Z);
+            aHit->SetDetectorID(idDetector);
             fHitCollection->insert(aHit);
             SensitiveDetector::PrintSDMemoryStatus();
             SensitiveDetector::CleanSDMemory();
@@ -159,6 +163,7 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
             aHit->SetX(X);
             aHit->SetY(Y);
             aHit->SetZ(Z);
+            aHit->SetDetectorID(idDetector);
             fHitCollection->insert(aHit);
             SensitiveDetector::PrintSDMemoryStatus();
             SensitiveDetector::CleanSDMemory();

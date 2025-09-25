@@ -29,6 +29,8 @@ RunAction::RunAction(): G4UserRunAction(), fOutputFileName("./Data")
     analysisManager->CreateNtupleDColumn(0,"X");
     analysisManager->CreateNtupleDColumn(0,"Y");
     analysisManager->CreateNtupleDColumn(0,"Z");
+    analysisManager->CreateNtupleDColumn(0,"detectorID");
+
     analysisManager->FinishNtuple(0);
 
 }
