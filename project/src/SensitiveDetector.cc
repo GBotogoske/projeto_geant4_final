@@ -137,7 +137,6 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
         
         //std::cout << X << " " << Y <<  " " << Z  << std::endl;
 
-
         int idDetector = aStep->GetTrack()->GetVolume()->GetCopyNo();
 
         if(isVIS)
