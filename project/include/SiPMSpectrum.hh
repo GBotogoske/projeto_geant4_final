@@ -47,11 +47,11 @@ class SiPMSpectrum
             for (size_t i = 0; i < this->n_uv; i++) 
             {
                 this->E_uv[i] = data_uv[i]["E"].get<double>()*eV;  
-                this->eff_uv[i] = data_uv[i]["p"].get<double>()/100;
+                this->eff_uv[i] = data_uv[i]["p"].get<double>();
             }
 
             std::string file_vis = config_SiPM["efficiency_VIS"].get<std::string>();
-            std::ifstream file_vis_path(std::string("../configuration/")+file_uv);
+            std::ifstream file_vis_path(std::string("../configuration/")+file_vis);
             json data_vis = json::parse(file_vis_path);
             this->n_vis = data_vis.size();
             this->E_vis.resize(this->n_vis);
@@ -59,7 +59,7 @@ class SiPMSpectrum
             for (size_t i = 0; i < this->n_vis; i++) 
             {
                 this->E_vis[i] = data_vis[i]["E"].get<double>()*eV;  
-                this->eff_vis[i] = data_vis[i]["p"].get<double>()/100;
+                this->eff_vis[i] = data_vis[i]["p"].get<double>();
             }
            
         }
