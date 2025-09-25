@@ -121,19 +121,22 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
     {
 
         G4Track* track = aStep->GetTrack();
-        G4int parentID = track->GetParentID();
-        G4ThreeVector motherPos;
+        G4int ancestorID = track->GetTrackID();  
 
-        // Sobe na árvore de pais até encontrar a primária original
-        while(trackMap[parentID].parentID != 0) 
+        // sobe até a primária
+        while(trackMap[ancestorID].parentID != 0) 
         {
-            parentID = trackMap[parentID].parentID;
+            ancestorID = trackMap[ancestorID].parentID;
         }
 
-        motherPos = trackMap[parentID].vertex;  
+        G4ThreeVector motherPos = trackMap[ancestorID].vertex;
+
         double X = motherPos.getX()/m;
         double Y = motherPos.getY()/m;
         double Z = motherPos.getZ()/m;
+        
+        //std::cout << X << " " << Y <<  " " << Z  << std::endl;
+
 
         int idDetector = aStep->GetTrack()->GetVolume()->GetCopyNo();
 
@@ -151,7 +154,6 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
             fHitCollection->insert(aHit);
             SensitiveDetector::PrintSDMemoryStatus();
             SensitiveDetector::CleanSDMemory();
-
         }
         if(isUV)
         {

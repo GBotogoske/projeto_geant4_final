@@ -201,7 +201,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     mpt_FC->AddProperty("ABSLENGTH", {1,1}, {config_FC["abs_length"].get<double>(),config_FC["abs_length"].get<double>()}, 2);
     FC_mat->SetMaterialPropertiesTable(mpt_FC);
 
-    G4double d_cryo = config_FC["distance_to_wall"].get<double>(); // distance from the membrane
+    G4double d_cryo = config_FC["distance_to_wall"].get<double>()*cm; // distance from the membrane
 
     //Starting with the vertical bars
     G4double FCv_sizeX = config_FC["vertical_bar"][0].get<double>()*cm;
@@ -399,23 +399,26 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     std::string file_acrylic_length = config_Acrylic["abs_length"].get<string>();
     std::ifstream f_acrylic_length(std::string("../configuration/")+file_acrylic_length);
     json data_acry_length = json::parse(f_acrylic_length);
-    size_t n_abs_acry = 3;
-    std::vector<G4double> absE_acry(n_abs_acry);
-    std::vector<G4double> absLen_acry(n_abs_acry);
-    for (size_t i=0; i<n_abs_acry; i++) 
+    size_t n_abs_acry_len = data_acry_length.size() ;
+    std::vector<G4double> absE_acry(n_abs_acry_len);
+    std::vector<G4double> absLen_acry(n_abs_acry_len);
+   
+    for (size_t i=0; i<n_abs_acry_len; i++) 
     {
         absE_acry[i] = data_acry_length[i]["E"].get<double>()*eV;    
-        absLen_acry[i] = data_acry_length[i]["l"].get<double>()*m;   
+        absLen_acry[i] = data_acry_length[i]["l"].get<double>()*m;  
+       
     }
-    G4Material* Acry_mat = new G4Material("My_Acrylic",density=density,n_abs_acry);
-    for (size_t i=0; i<n_abs_acry; i++) 
+    int n_abs_elem = 3;
+    G4Material* Acry_mat = new G4Material("My_Acrylic",density=density,n_abs_elem);
+    for (size_t i=0; i<n_abs_elem; i++) 
     {
         G4Element* elem = fNistManager->FindOrBuildElement(elements_acrylic[i]);
         Acry_mat->AddElement(elem,natoms_acrylic[i]);
     }
 
     mpt_Acry->AddProperty("RINDEX", energies_r_acry.data(), rindex_acry.data(), n_rindex_acry);
-    mpt_Acry->AddProperty("ABSLENGTH", absE_acry.data(), absLen_acry.data(), n_abs_acry); 
+    mpt_Acry->AddProperty("ABSLENGTH", absE_acry.data(), absLen_acry.data(), n_abs_acry_len); 
     Acry_mat->SetMaterialPropertiesTable(mpt_Acry);
 
     double acrylic_X = cryostat_sizeX-2*d_cryo-FCv_sizeX-2*cut_value1;
@@ -687,6 +690,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     double cathode_X = pen_X - 2*pen_thickness;
     double cathode_Z = pen_Z - 2*pen_thickness;
+
+    std::cout << "oiii: " << cathode_Z/m << std::endl;
+
     double cathode_hole_X = config_Cathode["hole_x"].get<double>()*cm;
     double cathode_hole_Y = config_Cathode["hole_y"].get<double>()*cm;
     double cathode_separation = config_Cathode["separation"].get<double>()*cm;
