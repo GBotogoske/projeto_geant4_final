@@ -59,11 +59,12 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
     G4int pDetected = 0;
     bool isVIS=false;
     bool isUV=false;
+    G4double p;
     if(thisParticle=="opticalphoton")
     {
         G4String procName = aStep->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
         G4bool checkAbsorption = G4StrUtil::contains(procName,"Absorption");
-        G4double p;
+        
 
         const auto& sipm_spectrum = SiPMSpectrum::get();
         std::vector<G4double> eff;
@@ -153,6 +154,7 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
             fHitCollection->insert(aHit);
             SensitiveDetector::PrintSDMemoryStatus();
             SensitiveDetector::CleanSDMemory();
+
         }
         if(isUV)
         {

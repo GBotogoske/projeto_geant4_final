@@ -101,7 +101,7 @@
         "size": 5,
         "thickness": 0.8,
         "distance_vertical": 100.0,
-        "distance_horizontal": 77.0,
+        "distance_horizontal": 100.0,
         "map_ldu": [["V","V","V","V"],
                     ["V","V","U","V"],
                     ["V","V","V","V"],
