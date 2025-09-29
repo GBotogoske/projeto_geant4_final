@@ -67,9 +67,17 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
         G4double z_pos = 2*m; //(-1+2*G4UniformRand())*cryostat_sizeZ/2;
 
         G4String targetVolumeName = "argon";
-        G4ThreeVector pos;
-        G4VPhysicalVolume* volume = nullptr;
 
+        G4ThreeVector pos;
+        pos = G4ThreeVector(x_pos, y_pos, z_pos);
+
+        G4VPhysicalVolume* volume = nullptr;
+    
+        x_pos = 0;// (-1 + 2*G4UniformRand())*cryostat_sizeX/2;
+        y_pos = 2*m;//(-1 + 2*G4UniformRand())*cryostat_sizeY/2;
+        z_pos = 2*m;//(-1 + 2*G4UniformRand())*cryostat_sizeZ/2;
+
+/*
         do 
         {
             // Sorteia posição dentro do criostato
@@ -84,7 +92,9 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
                         ->LocateGlobalPointAndSetup(pos);
 
                 //G4cout << volume->GetName() << std::endl;       
-        }while (!volume || std::string(volume->GetName()).find(targetVolumeName) == std::string::npos);
+        }while (!volume || std::string(volume->GetName()).find(targetVolumeName) == std::string::npos); */
+
+        //G4cout << volume->GetName() << std::endl;
 
         fParticleGun->SetParticlePosition(G4ThreeVector(x_pos,y_pos,z_pos));
 

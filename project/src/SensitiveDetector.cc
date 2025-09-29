@@ -112,7 +112,7 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
                 }
             }
         }
-        G4double r = G4RandFlat::shoot();  
+        G4double r = G4UniformRand();  
         if(r<p)
         {
             pDetected +=1;
