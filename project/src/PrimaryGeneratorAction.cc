@@ -72,8 +72,8 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
         }
 
         G4double x_pos = 0*m;//(-1+2*G4UniformRand())*cryostat_sizeX/2;
-        G4double y_pos = 4*m; //(-1+2*G4UniformRand())*cryostat_sizeY/2;
-        G4double z_pos = 4*m; //(-1+2*G4UniformRand())*cryostat_sizeZ/2;
+        G4double y_pos = 0*m; //(-1+2*G4UniformRand())*cryostat_sizeY/2;
+        G4double z_pos = 0*m; //(-1+2*G4UniformRand())*cryostat_sizeZ/2;
 
         G4String targetVolumeName = "argon";
 
@@ -82,9 +82,9 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 
         G4VPhysicalVolume* volume = nullptr;
     
-        /* x_pos = (-0.25 + 0.5*G4UniformRand())*m;
+        x_pos = (-0.25 + 0.5*G4UniformRand())*m;
         y_pos = (-1 + 2*G4UniformRand())*cryostat_sizeY/2;
-        z_pos = (-1 + 2*G4UniformRand())*cryostat_sizeZ/2; */
+        z_pos = (-1 + 2*G4UniformRand())*cryostat_sizeZ/2;
 
       /*   do 
         {

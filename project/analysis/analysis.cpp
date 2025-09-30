@@ -72,8 +72,12 @@ void analysis()
     int ny = h2->GetNbinsY();
     std::vector<std::vector<double>> mat_uv(nx, std::vector<double>(ny,0));
     std::vector<std::vector<double>> mat_vis(nx, std::vector<double>(ny,0));
+    std::vector<std::vector<double>> mat_all(nx, std::vector<double>(ny,0));
     std::vector<std::vector<double>> buffer(nx, std::vector<double>(ny,0));
     std::vector<std::vector<double>> myratio(nx, std::vector<double>(ny,0));
+
+    double lightyield_avg=0;
+    double lightyield_min=10000;
 
     for(int i=1; i<=nx; i++)        // ROOT bins começam em 1
     {
@@ -81,12 +85,26 @@ void analysis()
         {
             mat_vis[i-1][j-1] = h2->GetBinContent(i,j);
             mat_uv[i-1][j-1] = h3->GetBinContent(i,j);
+            mat_all[i-1][j-1] = h4->GetBinContent(i,j);
             buffer[i-1][j-1] =   mat_uv[i-1][j-1]/(  mat_uv[i-1][j-1] + mat_vis[i-1][j-1] );
             myratio[i-1][j-1] =   mat_uv[i-1][j-1]/(mat_vis[i-1][j-1] );
         }
     }
 
-    std::cout << "----- VIS ------" << std::endl;
+    int cont=0;
+    for(int i=0; i<nx; i++)        
+    {
+        for(int j=1; j<ny-1; j++)
+        {
+            lightyield_avg+=mat_all[i][j];
+            cont++;
+        }
+    }
+    lightyield_avg=lightyield_avg/cont;
+    std::cout << "AVG Light Yield: " << lightyield_avg << std::endl;
+
+
+    /* std::cout << "----- VIS ------" << std::endl;
     // --- Printar na tela ---
     for(int j=ny-1; j>=0; j--)  // imprimir Y crescente de cima para baixo
     {
@@ -106,7 +124,7 @@ void analysis()
             std::cout << mat_uv[i][j] << " ";
         }
         std::cout << std::endl;
-    }
+    } */
 
     // Criar histograma para o buffer
     TH2D *hbuffer = new TH2D("hbuffer","UV/(UV+VIS)", nx, -6.5, 6.5, ny, -6.5, 6.5);
