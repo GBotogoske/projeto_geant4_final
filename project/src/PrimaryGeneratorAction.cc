@@ -56,7 +56,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     */
     G4ParticleDefinition* photon = G4ParticleTable::GetParticleTable()->FindParticle("opticalphoton");
 
-    float this_probability = 0.3;
+    float this_probability = 0.3; // quantity of argon light
 
     for (int i = 0; i < 1 ; i++) 
     {
@@ -73,7 +73,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 
         G4double x_pos = 0*m;//(-1+2*G4UniformRand())*cryostat_sizeX/2;
         G4double y_pos = 4*m; //(-1+2*G4UniformRand())*cryostat_sizeY/2;
-        G4double z_pos = 6.25*m; //(-1+2*G4UniformRand())*cryostat_sizeZ/2;
+        G4double z_pos = 4*m; //(-1+2*G4UniformRand())*cryostat_sizeZ/2;
 
         G4String targetVolumeName = "argon";
 
