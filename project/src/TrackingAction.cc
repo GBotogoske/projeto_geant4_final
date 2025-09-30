@@ -1,7 +1,7 @@
 #include "TrackingAction.hh"
 #include "G4EventManager.hh"
 
-std::map<G4int, TrackInfo> trackMap;
+G4ThreadLocal std::map<G4int, TrackInfo> trackMap;
 
 void MyTrackingAction::PreUserTrackingAction(const G4Track* track) 
 {

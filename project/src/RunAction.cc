@@ -20,7 +20,7 @@ RunAction::RunAction(): G4UserRunAction(), fOutputFileName("./Data")
     G4RunManager::GetRunManager()->SetPrintProgress(1);
     G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
     G4cout << "Using " << analysisManager->GetType() << G4endl;
-
+    analysisManager->SetNtupleMerging(true);
     //Create ntuple
     analysisManager->CreateNtuple("Primary_Hit", "Primary_Hit");
     analysisManager->CreateNtupleIColumn(0,"eventID");
@@ -32,7 +32,6 @@ RunAction::RunAction(): G4UserRunAction(), fOutputFileName("./Data")
     analysisManager->CreateNtupleDColumn(0,"detectorID");
 
     analysisManager->FinishNtuple(0);
-
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

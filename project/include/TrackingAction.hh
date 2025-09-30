@@ -2,7 +2,7 @@
 #include "G4Track.hh"
 #include <map>
 #include "G4ThreeVector.hh"
-
+#include "globals.hh"
 
 struct TrackInfo
 {
@@ -10,7 +10,7 @@ struct TrackInfo
     G4int parentID;
 };
 
-extern std::map<G4int, TrackInfo> trackMap;
+G4ThreadLocal extern std::map<G4int, TrackInfo> trackMap;
 
 class MyTrackingAction : public G4UserTrackingAction 
 {

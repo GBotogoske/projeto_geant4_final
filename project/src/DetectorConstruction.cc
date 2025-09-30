@@ -901,8 +901,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     SiPM_mat->SetMaterialPropertiesTable(mpt_SiPM);
 
     G4Box* sipm_template = new G4Box("sipm" , size_SiPM/2 , size_SiPM/2 , thickness_SiPM/2);
-    auto sipmvis_logical = new G4LogicalVolume(sipm_template, SiPM_mat , "sipm");
-    auto sipmuv_logical = new G4LogicalVolume(sipm_template, SiPM_mat , "sipm");
+    sipmvis_logical = new G4LogicalVolume(sipm_template, SiPM_mat , "sipm");
+    sipmuv_logical = new G4LogicalVolume(sipm_template, SiPM_mat , "sipm");
 
     // Surface properties
     auto sipmSurface = new G4OpticalSurface("SiPM_Surface");
@@ -1026,19 +1026,22 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     visSiPMuv->SetForceSolid(true); 
     sipmuv_logical->SetVisAttributes(visSiPMuv);
 
-    // Detector Properties
-    G4SDManager *SD_manager = G4SDManager::GetSDMpointer();
-    G4String SDModuleName = "/SensitiveDetector";
-    if(SD_manager->FindSensitiveDetector(SDModuleName,true))
-        delete(SD_manager->FindSensitiveDetector(SDModuleName,true));
-    SensitiveDetector *sensitiveModule = new SensitiveDetector(SDModuleName,"HitCollection");
-    SD_manager->AddNewDetector(sensitiveModule);
-  
-    sipmvis_logical->SetSensitiveDetector(sensitiveModule);
-    sipmuv_logical->SetSensitiveDetector(sensitiveModule);
-
     return physicalWorld;
   
+}
+
+void DetectorConstruction::ConstructSDandField()
+{
+    G4SDManager* SDman = G4SDManager::GetSDMpointer();
+
+    if (SDman->FindSensitiveDetector("SensitiveDetector", false) == nullptr) 
+    {
+        auto* sensitiveModule = new SensitiveDetector("SensitiveDetector", "HitCollection");
+        SDman->AddNewDetector(sensitiveModule);
+
+        sipmvis_logical->SetSensitiveDetector(sensitiveModule);
+        sipmuv_logical->SetSensitiveDetector(sensitiveModule);
+    }
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

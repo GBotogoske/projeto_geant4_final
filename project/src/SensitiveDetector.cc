@@ -39,7 +39,7 @@ SensitiveDetector::~SensitiveDetector(){}
 void SensitiveDetector::Initialize(G4HCofThisEvent *HCE)
 {
     fHitCollection = new HitCollection(GetName(),collectionName[0]);
-    static G4int HCID = G4SDManager::GetSDMpointer()->GetCollectionID(collectionName[0]); //<<-- this is to get an ID for the colletionName[0]
+    G4int HCID = G4SDManager::GetSDMpointer()->GetCollectionID(collectionName[0]); //<<-- this is to get an ID for the colletionName[0]
     //G4cout<<"*** "<<fHitCollection->GetName()<<" initialized [ID = "<<HCID<<"]"<<G4endl;
     HCE->AddHitsCollection(HCID, fHitCollection);
 }

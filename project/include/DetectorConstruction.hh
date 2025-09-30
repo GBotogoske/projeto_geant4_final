@@ -25,9 +25,12 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     DetectorConstruction();
     virtual ~DetectorConstruction();
     virtual G4VPhysicalVolume* Construct();
-  
+    virtual void ConstructSDandField() override;  
+    
   protected:
     json config;
+    G4LogicalVolume* sipmvis_logical;
+    G4LogicalVolume* sipmuv_logical;
 };
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
