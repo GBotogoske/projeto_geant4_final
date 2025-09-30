@@ -56,15 +56,24 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
     */
     G4ParticleDefinition* photon = G4ParticleTable::GetParticleTable()->FindParticle("opticalphoton");
 
+    float this_probability = 0.3;
+
     for (int i = 0; i < 1 ; i++) 
     {
 
         fParticleGun->SetParticleDefinition(photon);
-        fParticleGun->SetParticleEnergy(9.7*eV);       
+        if(G4UniformRand()<=this_probability)
+        {
+            fParticleGun->SetParticleEnergy(9.7*eV);  //127nm  
+        }
+        else
+        {
+            fParticleGun->SetParticleEnergy(7.08*eV);  //175nm
+        }
 
         G4double x_pos = 0*m;//(-1+2*G4UniformRand())*cryostat_sizeX/2;
-        G4double y_pos = 2*m; //(-1+2*G4UniformRand())*cryostat_sizeY/2;
-        G4double z_pos = 2*m; //(-1+2*G4UniformRand())*cryostat_sizeZ/2;
+        G4double y_pos = 4*m; //(-1+2*G4UniformRand())*cryostat_sizeY/2;
+        G4double z_pos = 6.25*m; //(-1+2*G4UniformRand())*cryostat_sizeZ/2;
 
         G4String targetVolumeName = "argon";
 
@@ -73,24 +82,23 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 
         G4VPhysicalVolume* volume = nullptr;
     
-        x_pos = 0;// (-1 + 2*G4UniformRand())*cryostat_sizeX/2;
-        y_pos = 2*m;//(-1 + 2*G4UniformRand())*cryostat_sizeY/2;
-        z_pos = 2*m;//(-1 + 2*G4UniformRand())*cryostat_sizeZ/2;
+        /* x_pos = (-0.25 + 0.5*G4UniformRand())*m;
+        y_pos = (-1 + 2*G4UniformRand())*cryostat_sizeY/2;
+        z_pos = (-1 + 2*G4UniformRand())*cryostat_sizeZ/2; */
 
-/*
-        do 
+      /*   do 
         {
             // Sorteia posição dentro do criostato
-            x_pos = 0;// (-1 + 2*G4UniformRand())*cryostat_sizeX/2;
+            x_pos = (-0.25 + 0.5*G4UniformRand())*m;
             y_pos = (-1 + 2*G4UniformRand())*cryostat_sizeY/2;
             z_pos = (-1 + 2*G4UniformRand())*cryostat_sizeZ/2;
-            pos = G4ThreeVector(x_pos, y_pos, z_pos);
 
+            pos = G4ThreeVector(x_pos, y_pos, z_pos);
             // Descobre qual volume contém essa posição
             volume = G4TransportationManager::GetTransportationManager()
                         ->GetNavigatorForTracking()
                         ->LocateGlobalPointAndSetup(pos);
-
+          
                 //G4cout << volume->GetName() << std::endl;       
         }while (!volume || std::string(volume->GetName()).find(targetVolumeName) == std::string::npos); */
 

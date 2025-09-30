@@ -15,6 +15,7 @@ void analysis()
     // Create 2D histogram
     TH2D *h2 = new TH2D("hvis","VIS(z,y)", 26, -6.5, 6.5, 26, -6.5, 6.5);
     TH2D *h3 = new TH2D("huv","VUV(z,y)", 26, -6.5, 6.5, 26, -6.5, 6.5);
+    TH2D *h4 = new TH2D("hall","VUV+VIS(z,y)", 26, -6.5, 6.5, 26, -6.5, 6.5);
 
     // Fill the histogram
     Double_t z, y, f, f2;
@@ -23,7 +24,7 @@ void analysis()
     tree->SetBranchAddress("PhotonDetectedVIS", &f);
     tree->SetBranchAddress("PhotonDetectedUV", &f2);
 
-    float gain=40000.0/24000.0;
+    float gain=40000.0/25000.0;
     float ratio=1.0;
 
     Long64_t nentries = tree->GetEntries();
@@ -49,7 +50,8 @@ void analysis()
         {
             h3->Fill(z,y,f2*ratio);
         } // fill with weight = f
-           
+        
+        h4->Fill(z,y,(f+f2)*ratio);
     }
 
     // Draw heatmap
@@ -61,6 +63,9 @@ void analysis()
     h3->Draw("COLZ");  // COLZ = color map
     c2->SaveAs("heatmapUV.png");
 
+    TCanvas *c5 = new TCanvas();
+    h4->Draw("COLZ");  // COLZ = color map
+    c5->SaveAs("heatmapAll.png");
 
         // --- Converter h2 para matriz ---
     int nx = h2->GetNbinsX();

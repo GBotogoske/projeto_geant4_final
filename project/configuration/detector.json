@@ -29,12 +29,12 @@
             "Fast_Amp": 0.25,
             "Birks": 0.069        
         },
-        "rayleigh_scattering": "lar_rayleigh.json",
-        "reflectivity_anode": 0.9
+        "rayleigh_scattering": "lar_rayleigh_andre.json",
+        "reflectivity_anode": 0.3
     },
     "FC":
     {
-        "vertical_bar": [5, 1296, 5],
+        "vertical_bar": [4.5, 1299, 4.5],
         "vertical_bar_distance": 180,
         "horizontal_bar_distance": 6,
         "horizontal_bar_1_majorAxis": 1.5,
@@ -43,8 +43,8 @@
         "horizontal_bar_2_majorAxis": 4.6,
         "horizontal_bar_2_minorAxis": 1.02,
         "cut_horizontal_bar2": 0.7,
-        "distance_to_wall": 50 ,
-        "sep_bar_type": 240 ,
+        "distance_to_wall": 50.19 ,
+        "sep_bar_type": 225 ,
 
         "material": "G4_Al",
         "refraction_index": 3.0,
@@ -53,6 +53,8 @@
     },
     "Cathode_Grid":
     {
+        "length_x": 5890,
+        "length_z": 1190,
         "hole_x": 60,
         "hole_y": 60,
         "separation": 5
@@ -96,8 +98,8 @@
         "size": 5,
         "thickness": 0.8,
         "distance_vertical": 100.0,
-        "distance_horizontal": 100.0,
-        "reflectance": 0.15,
+        "distance_horizontal": 77.0,
+        "reflectance": 0,
         "map_ldu": [["V","V","V","V"],
                     ["V","V","U","V"],
                     ["V","V","V","V"],
