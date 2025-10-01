@@ -215,7 +215,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     surface_anode_lar-> SetFinish(polished);
     G4MaterialPropertiesTable* mpt_AnodeLar_Surface = new G4MaterialPropertiesTable();
 
-    mpt_AnodeLar_Surface->AddProperty("REFLECTIVITY",{1.0*eV,3.1*eV},{config_LAr["reflectivity_anode"].get<double>(),config_LAr["reflectivity_anode"].get<double>()},2);
+    mpt_AnodeLar_Surface->AddProperty("REFLECTIVITY",{1.0*eV,15*eV},{config_LAr["reflectivity_anode"].get<double>(),config_LAr["reflectivity_anode"].get<double>()},2);
     surface_anode_lar->SetMaterialPropertiesTable(mpt_AnodeLar_Surface);
 
     new G4LogicalBorderSurface("LiquidArgon-->AnodeTop", physicalWorld, physicalTopAnode , surface_anode_lar );
@@ -227,8 +227,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4Material* FC_mat = fNistManager->FindOrBuildMaterial(config_FC["material"].get<string>());
 
     auto mpt_FC = new G4MaterialPropertiesTable();
-    mpt_FC->AddProperty("RINDEX", {0.1*eV,10*eV}, {config_FC["refraction_index"].get<double>(),config_FC["refraction_index"].get<double>()}, 2);
-    mpt_FC->AddProperty("ABSLENGTH", {0.1*eV,10*eV}, {config_FC["abs_length"].get<double>(),config_FC["abs_length"].get<double>()}, 2);
+    mpt_FC->AddProperty("RINDEX", {0.1*eV,15*eV}, {config_FC["refraction_index"].get<double>(),config_FC["refraction_index"].get<double>()}, 2);
+    mpt_FC->AddProperty("ABSLENGTH", {0.1*eV,15*eV}, {config_FC["abs_length"].get<double>(),config_FC["abs_length"].get<double>()}, 2);
     FC_mat->SetMaterialPropertiesTable(mpt_FC);
 
     G4double d_cryo = config_FC["distance_to_wall"].get<double>()*cm; // distance from the membrane
@@ -271,7 +271,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     std::vector<G4TwoVector> ellipse1;
     double lastY=1e30; // inicializa com valor impossível
 
-    int npoints = 20;
+    int npoints = 120;
 
     for (int i = 0; i < npoints; i++) 
     {
@@ -322,17 +322,17 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     {
         if((i+1)*FCh_distance - FCh_distance/2 > sep_bar_type)
         {
-            FCh_united = new G4UnionSolid("FCv_longwall_template", FCh_united, solidBARh1, 0, G4ThreeVector((i+1)*FCh_distance,0,0));
-            FCh_united = new G4UnionSolid("FCv_longwall_template", FCh_united, solidBARh1, 0, G4ThreeVector((-i)*FCh_distance,0,0));
-            FCh_united_end = new G4UnionSolid("FCv_longwall_template", FCh_united_end, solidBARh1_end, 0, G4ThreeVector((i+1)*FCh_distance,0,0));
-            FCh_united_end = new G4UnionSolid("FCv_longwall_template", FCh_united_end, solidBARh1_end, 0, G4ThreeVector((-i)*FCh_distance,0,0));        
+            FCh_united = new G4UnionSolid("FCh_longwall_template", FCh_united, solidBARh1, 0, G4ThreeVector((i+1)*FCh_distance,0,0));
+            FCh_united = new G4UnionSolid("FCh_longwall_template", FCh_united, solidBARh1, 0, G4ThreeVector((-i)*FCh_distance,0,0));
+            FCh_united_end = new G4UnionSolid("FCh_endwall_template", FCh_united_end, solidBARh1_end, 0, G4ThreeVector((i+1)*FCh_distance,0,0));
+            FCh_united_end = new G4UnionSolid("FCh_endwall_template", FCh_united_end, solidBARh1_end, 0, G4ThreeVector((-i)*FCh_distance,0,0));        
         }
         else
         {
-            FCh_united = new G4UnionSolid("FCv_longwall_template", FCh_united, solidBARh2, 0, G4ThreeVector((i+1)*FCh_distance,0,0));
-            FCh_united = new G4UnionSolid("FCv_longwall_template", FCh_united, solidBARh2, 0, G4ThreeVector((-i)*FCh_distance,0,0)); 
-            FCh_united_end = new G4UnionSolid("FCv_longwall_template", FCh_united_end, solidBARh2_end, 0, G4ThreeVector((i+1)*FCh_distance,0,0));
-            FCh_united_end = new G4UnionSolid("FCv_longwall_template", FCh_united_end, solidBARh2_end, 0, G4ThreeVector((-i)*FCh_distance,0,0));     
+            FCh_united = new G4UnionSolid("FCh_longwall_template", FCh_united, solidBARh2, 0, G4ThreeVector((i+1)*FCh_distance,0,0));
+            FCh_united = new G4UnionSolid("FCh_longwall_template", FCh_united, solidBARh2, 0, G4ThreeVector((-i)*FCh_distance,0,0)); 
+            FCh_united_end = new G4UnionSolid("FCh_endwall_template", FCh_united_end, solidBARh2_end, 0, G4ThreeVector((i+1)*FCh_distance,0,0));
+            FCh_united_end = new G4UnionSolid("FCh_endwall_template", FCh_united_end, solidBARh2_end, 0, G4ThreeVector((-i)*FCh_distance,0,0));     
         }
         
     } 
@@ -376,10 +376,10 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
         ,G4ThreeVector(0,-FCh_distance/2, cryostat_sizeZ/2-d_cryo-FCv_sizeZ/2-(cut_value1-barH_eixoY1/2)),
         LogicalFCh_wall,"FCh_long_wall",logicWorld,true,1,checkOverlaps);
     G4VPhysicalVolume* physicalFC2_h = new G4PVPlacement( rotFinal2 
-        ,G4ThreeVector(0,-FCh_distance/2, -(cryostat_sizeZ/2-d_cryo-FCv_sizeZ/2-(cut_value1-barH_eixoY1/2))),
+        ,G4ThreeVector(0,+FCh_distance/2, -(cryostat_sizeZ/2-d_cryo-FCv_sizeZ/2-(cut_value1-barH_eixoY1/2))),
         LogicalFCh_wall,"FCh_long_wall",logicWorld,true,2,checkOverlaps);
     G4VPhysicalVolume* physicalFC3_h = new G4PVPlacement( rotTopZ 
-        ,G4ThreeVector(-(cryostat_sizeX/2-d_cryo-FCv_sizeX/2-(cut_value1-barH_eixoY1/2)),-FCh_distance/2, 0),
+        ,G4ThreeVector(-(cryostat_sizeX/2-d_cryo-FCv_sizeX/2-(cut_value1-barH_eixoY1/2)),+FCh_distance/2, 0),
         LogicalFCh_end,"FCh_end_wall",logicWorld,true,1,checkOverlaps);
     G4VPhysicalVolume* physicalFC4_h = new G4PVPlacement( minus_rotTopZ 
         ,G4ThreeVector((cryostat_sizeX/2-d_cryo-FCv_sizeX/2-(cut_value1-barH_eixoY1/2)),-FCh_distance/2, 0),
@@ -393,7 +393,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     surface_FC_lar-> SetType(dielectric_metal);
     surface_FC_lar-> SetFinish(polished);
     G4MaterialPropertiesTable* mpt_FCLar_Surface = new G4MaterialPropertiesTable();
-    mpt_FCLar_Surface->AddProperty("REFLECTIVITY",{0.1*eV,10*eV}, {config_FC["reflectivity"].get<double>(),config_FC["reflectivity"].get<double>()},2);
+    mpt_FCLar_Surface->AddProperty("REFLECTIVITY",{0.1*eV,15*eV}, {config_FC["reflectivity"].get<double>(),config_FC["reflectivity"].get<double>()},2);
     surface_FC_lar->SetMaterialPropertiesTable(mpt_FCLar_Surface);
 
     new G4LogicalBorderSurface("LiquidArgon-->FC1v", physicalWorld, physicalFC1_v , surface_FC_lar );
@@ -480,7 +480,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     surface_acrylic_lar->SetType(dielectric_dielectric);
     surface_acrylic_lar->SetFinish(polished);
     G4MaterialPropertiesTable* mpt_AcryLar_Surface = new G4MaterialPropertiesTable();
-    mpt_AcryLar_Surface->AddProperty("REFLECTIVITY",{0.1,15}, {1,1},2);
+    mpt_AcryLar_Surface->AddProperty("REFLECTIVITY",{0.1*eV,15*eV}, {1,1},2);
     surface_acrylic_lar->SetMaterialPropertiesTable(mpt_AcryLar_Surface);
 
     new G4LogicalBorderSurface("Acrylic1-->Argon", physicalAcrylical1, physicalWorld , surface_acrylic_lar );
@@ -572,7 +572,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     auto time_constant_pen=config_PEN["time_constant"].get<double>()*ns;
     auto eff_pen=config_PEN["efficiency"];
 
-    mpt_PEN->AddProperty("RINDEX", {0.1,15},{refraction_index_pen,refraction_index_pen} , 2);
+    mpt_PEN->AddProperty("RINDEX", {0.1*eV,15*eV},{refraction_index_pen,refraction_index_pen} , 2);
     mpt_PEN->AddProperty("WLSABSLENGTH", energies_abs_pen, abs_pen,n_abs_pen);
     mpt_PEN->AddProperty("WLSCOMPONENT", energies_em_pen, em_pen, n_em_pen);
     mpt_PEN->AddConstProperty("WLSTIMECONSTANT",time_constant_pen);
@@ -611,7 +611,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     surface_PEN_lar->SetType(dielectric_dielectric);
     surface_PEN_lar->SetFinish(polished);
     G4MaterialPropertiesTable* mpt_PENLar_Surface = new G4MaterialPropertiesTable();
-    mpt_PENLar_Surface->AddProperty("REFLECTIVITY",{0.1,15}, {1,1},2);
+    mpt_PENLar_Surface->AddProperty("REFLECTIVITY",{0.1*eV,15*eV}, {1,1},2);
     surface_PEN_lar->SetMaterialPropertiesTable(mpt_PENLar_Surface);
 
     G4OpticalSurface* surface_PEN_acry = new G4OpticalSurface("surface_PEN_acry");
@@ -619,7 +619,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     surface_PEN_acry->SetType(dielectric_dielectric);
     surface_PEN_acry->SetFinish(polished);
     G4MaterialPropertiesTable* mpt_PENAcry_Surface = new G4MaterialPropertiesTable();
-    mpt_PENAcry_Surface->AddProperty("REFLECTIVITY",{0.1,15}, {1,1},2);
+    mpt_PENAcry_Surface->AddProperty("REFLECTIVITY",{0.1*eV,15*eV}, {1,1},2);
     surface_PEN_acry->SetMaterialPropertiesTable(mpt_PENAcry_Surface);
 
     new G4LogicalBorderSurface("Acrylic1 --> PEN1", physicalAcrylical1, physicalPEN1 , surface_PEN_acry );
@@ -881,23 +881,19 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     std::vector<std::vector<std::string>> matrix_pos = config_SiPM["map_ldu"].get<std::vector<std::vector<std::string>>>(); //[i][j] = [linha][coluna]
 
     int size=2;
-    G4double* RIndex_SiPM=new G4double[size];
-    for (int i=0;i<size;i++){*(RIndex_SiPM+i)=rindex_SiPM;}
-    G4double* AbsorptionLength_SiPM=new G4double[size];
-    for (int i=0;i<size;i++){*(AbsorptionLength_SiPM+i)=abslength_SiPM;}
-
-    G4double* scint_emission = new G4double[size];
+  
     G4double* RIndex_array   = new G4double[size];
     G4double* abs_array   = new G4double[size];
     for (int i=0; i<size; i++) 
-    {
-        scint_emission[i] = i+1;        
+    {     
         RIndex_array[i]   = rindex_SiPM; 
         abs_array[i] = abslength_SiPM;
     }
+
+    G4double photonEnergy[2] = {0.1*eV , 15*eV}; 
     G4MaterialPropertiesTable* mpt_SiPM = new G4MaterialPropertiesTable();
-    mpt_SiPM->AddProperty("RINDEX",scint_emission,RIndex_array,size);
-    mpt_SiPM->AddProperty("ABSLENGTH",scint_emission,abs_array,size);
+    mpt_SiPM->AddProperty("RINDEX",photonEnergy,RIndex_array,size);
+    mpt_SiPM->AddProperty("ABSLENGTH",photonEnergy,abs_array,size);
     SiPM_mat->SetMaterialPropertiesTable(mpt_SiPM);
 
     G4Box* sipm_template = new G4Box("sipm" , size_SiPM/2 , size_SiPM/2 , thickness_SiPM/2);
@@ -912,7 +908,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     G4MaterialPropertiesTable* mpt_surface = new G4MaterialPropertiesTable();
 
-    G4double photonEnergy[2] = {0.1*eV , 15*eV}; 
     G4double reflectivity[2] = {config_SiPM["reflectance"].get<double>() , config_SiPM["reflectance"].get<double>()};       
     G4double transmitance[2] = {1.0 , 1.0};    
 
@@ -944,16 +939,16 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     std::vector<G4PVPlacement*> sipm_physicals;
     sipm_physicals.clear();
 
-    int n_ldu_x = (cryostat_sizeX-4*size_SiPM+dh_SiPM)/dh_SiPM;
-    int n_ldu_y = (cryostat_sizeY-4*size_SiPM+dv_SiPM)/dv_SiPM;
+    int n_ldu_x = cryostat_sizeX/dh_SiPM;
+    int n_ldu_y = cryostat_sizeY/dv_SiPM;
 
     int cont=0;
     for (int ix = 0; ix < n_ldu_x; ix++)
     {
         for (int iy = 0; iy < n_ldu_y; iy++) 
         {
-            double x_pos = (ix - (n_ldu_x-1)/2.0)*(dh_SiPM);
-            double y_pos = (iy - (n_ldu_y-1)/2.0)*(dv_SiPM);
+            double x_pos = (ix - (n_ldu_x)/2.0 + 0.5)*(dh_SiPM);
+            double y_pos = (iy - (n_ldu_y)/2.0 + 0.5)*(dv_SiPM);
             
             for (int side = -1; side <= 1; side += 2)
             {
@@ -983,13 +978,13 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     
     auto rotY90 = new G4RotationMatrix();
     rotY90->rotateY(90.*deg);
-    int n_ldu_z = (cryostat_sizeZ-4*size_SiPM+dh_SiPM)/dh_SiPM;
+    int n_ldu_z = (cryostat_sizeZ)/dh_SiPM-1;
     for (int iz = 0; iz < n_ldu_z; iz++)
     {
         for (int iy = 0; iy < n_ldu_y; iy++) 
         {
-            double z_pos = (iz - (n_ldu_z-1)/2.0)*(dh_SiPM);
-            double y_pos = (iy - (n_ldu_y-1)/2.0)*(dv_SiPM);
+            double z_pos = (iz - (n_ldu_z)/2.0 + 0.5)*(dh_SiPM);
+            double y_pos = (iy - (n_ldu_y)/2.0 + 0.5)*(dv_SiPM);
             
             for (int side = -1; side <= 1; side += 2)
             {

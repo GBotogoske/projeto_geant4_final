@@ -28,6 +28,8 @@ class SiPMSpectrum
         std::vector<G4double> E_vis;
         int n_vis=0;
 
+        float reflectance;
+
         void loadFromFile(const std::string& filename) 
         {
             std::ifstream file(filename);
@@ -62,6 +64,7 @@ class SiPMSpectrum
                 this->eff_vis[i] = data_vis[i]["p"].get<double>();
             }
            
+            reflectance = config_SiPM["reflectance"].get<double>();
         }
 
 
@@ -96,6 +99,10 @@ class SiPMSpectrum
         int getNVIS() const 
         { 
             return this->n_vis; 
+        }
+        float getReflectivy() const
+        {
+            return this->reflectance;
         }
 
         SiPMSpectrum(const SiPMSpectrum&) = delete;

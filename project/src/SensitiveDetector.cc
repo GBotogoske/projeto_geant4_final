@@ -60,18 +60,20 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
     bool isVIS=false;
     bool isUV=false;
     G4double p;
+
     if(thisParticle=="opticalphoton")
     {
         G4String procName = aStep->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
         G4bool checkAbsorption = G4StrUtil::contains(procName,"Absorption");
-        
 
         const auto& sipm_spectrum = SiPMSpectrum::get();
         std::vector<G4double> eff;
         std::vector<G4double> E;
+        double reflectance = sipm_spectrum.getReflectivy();
         int n;
         if(checkAbsorption==true and G4StrUtil::contains(thisVolume,"sipmVIS"))
         {   
+            G4cout << "VIS" << std::endl;
             isVIS=true;
             eff = sipm_spectrum.get_effVIS();
             E = sipm_spectrum.get_EVIS();
@@ -79,6 +81,7 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
         }
         else if(checkAbsorption==true and G4StrUtil::contains(thisVolume,"sipmUV"))
         {   
+            G4cout << "UV" << std::endl;
             isUV=true;
             eff = sipm_spectrum.get_effUV();
             E = sipm_spectrum.get_EUV();
@@ -113,6 +116,9 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
             }
         }
         G4double r = G4UniformRand();  
+
+        p = p/(1-reflectance);
+
         if(r<p)
         {
             pDetected +=1;
@@ -145,7 +151,7 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
             OneHit *aHit = new OneHit();
             SensitiveDetector::SetCounterStatus_VIS(pDetected);
             G4int TotP_VIS = SensitiveDetector::GetCounterStatus_VIS();
-            aHit->SetPhotonCounter_VIS(TotP_VIS);
+            aHit->SetPhotonCounter_VIS(1);
             aHit->SetPhotonCounter_UV(0);
             aHit->SetX(X);
             aHit->SetY(Y);
@@ -162,7 +168,7 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
             SensitiveDetector::SetCounterStatus_UV(pDetected);
             G4int TotP_UV = SensitiveDetector::GetCounterStatus_UV();
             aHit->SetPhotonCounter_VIS(0);
-            aHit->SetPhotonCounter_UV(TotP_UV);
+            aHit->SetPhotonCounter_UV(1);
             aHit->SetX(X);
             aHit->SetY(Y);
             aHit->SetZ(Z);
