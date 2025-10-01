@@ -156,15 +156,14 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     G4cout << "Cryostat Interal size: " << cryostat_sizeX/m << " m  X " << cryostat_sizeY/m << " m  X " << cryostat_sizeZ/m << " m " << std::endl;
     G4cout << "Cryostat Thickness: " << cryostatThickness/m << " m " << std::endl;
+    G4cout << "Cryostat Refraction Index: " << config_cryostat["refraction_index"].get<double>() << std::endl;
+    G4cout << "Cryostat Absorption Length: " << config_cryostat["abs_length"].get<double>()*cm/m << "m" << std::endl;
 
     G4Material* cryostat_mat = fNistManager->FindOrBuildMaterial(config_cryostat["material"].get<string>());
     auto mpt_Cryo = new G4MaterialPropertiesTable();
-    mpt_Cryo->AddProperty("RINDEX", {1,15}, {config_cryostat["refraction_index"].get<double>(),config_cryostat["refraction_index"].get<double>()}, 2);
-    mpt_Cryo->AddProperty("ABSLENGTH", {1,15}, {config_cryostat["abs_length"].get<double>(),config_cryostat["abs_length"].get<double>()}, 2);
+    mpt_Cryo->AddProperty("RINDEX", {1*eV,15*eV}, {config_cryostat["refraction_index"].get<double>(),config_cryostat["refraction_index"].get<double>()}, 2);
+    mpt_Cryo->AddProperty("ABSLENGTH", {1*eV,15*eV}, {config_cryostat["abs_length"].get<double>()*cm,config_cryostat["abs_length"].get<double>()*cm}, 2);
     cryostat_mat->SetMaterialPropertiesTable(mpt_Cryo);
-
-    G4cout << "Vikuit/Cryostat Reflectance: " << config_cryostat["refraction_index"].get<double>()  << std::endl;
-    G4cout << "Vikuit/Cryostat Absorption Length: " << config_cryostat["abs_length"].get<double>() << " m"<< std::endl;
 
     G4Box* solidExternalCryostat = new G4Box("Cryostat_ext",0.5*cryostat_sizeX+cryostatThickness, 0.5*cryostat_sizeY+cryostatThickness, 0.5*cryostat_sizeZ+cryostatThickness);
     G4Box* solidInternalCryostat = new G4Box("Cryostat_int",0.5*cryostat_sizeX, 0.5*cryostat_sizeY, 0.5*cryostat_sizeZ);
@@ -185,6 +184,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     std::ifstream f_vikuiti_reflectance(std::string("../configuration/")+file_vikuiti_reflectance);
     json data_reflectance_vikuiti = json::parse(f_vikuiti_reflectance);
     
+    G4cout << "Vikuiti Reflectivity: " << std::endl;
+
     size_t n_vikuiti = data_reflectance_vikuiti.size();
     std::vector<G4double> energies_vikuiti(n_vikuiti);
     std::vector<G4double> r_vikuiti(n_vikuiti);
@@ -192,11 +193,11 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     {
         energies_vikuiti[i] = data_reflectance_vikuiti[i]["E"].get<double>()*eV;  
         r_vikuiti[i]   = data_reflectance_vikuiti[i]["r"].get<double>();
+        G4cout <<   energies_vikuiti[i]/eV << " eV -- " << r_vikuiti[i] << std::endl;  
     }
 
     mpt_CryoLar_Surface->AddProperty("REFLECTIVITY",energies_vikuiti, r_vikuiti,n_vikuiti);
     surface_cryo_lar->SetMaterialPropertiesTable(mpt_CryoLar_Surface);
-
     new G4LogicalBorderSurface("LiquidArgon-->Cryo", physicalWorld, physicalCryostat , surface_cryo_lar );
 
     // --------------  ANODE ----------------------------
@@ -215,6 +216,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     surface_anode_lar-> SetFinish(polished);
     G4MaterialPropertiesTable* mpt_AnodeLar_Surface = new G4MaterialPropertiesTable();
 
+    G4cout << "Anode Reflectivity: " << config_LAr["reflectivity_anode"].get<double>() << std::endl;
+
     mpt_AnodeLar_Surface->AddProperty("REFLECTIVITY",{1.0*eV,15*eV},{config_LAr["reflectivity_anode"].get<double>(),config_LAr["reflectivity_anode"].get<double>()},2);
     surface_anode_lar->SetMaterialPropertiesTable(mpt_AnodeLar_Surface);
 
@@ -226,18 +229,24 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     auto config_FC = config["FC"];
     G4Material* FC_mat = fNistManager->FindOrBuildMaterial(config_FC["material"].get<string>());
 
+    G4cout << "FC Refraction Index: " << config_FC["refraction_index"].get<double>() << std::endl;
+    G4cout << "FC Absorption Length: " << config_FC["abs_length"].get<double>()*cm/m << "m" << std::endl;
+
     auto mpt_FC = new G4MaterialPropertiesTable();
     mpt_FC->AddProperty("RINDEX", {0.1*eV,15*eV}, {config_FC["refraction_index"].get<double>(),config_FC["refraction_index"].get<double>()}, 2);
-    mpt_FC->AddProperty("ABSLENGTH", {0.1*eV,15*eV}, {config_FC["abs_length"].get<double>(),config_FC["abs_length"].get<double>()}, 2);
+    mpt_FC->AddProperty("ABSLENGTH", {0.1*eV,15*eV}, {config_FC["abs_length"].get<double>()*cm,config_FC["abs_length"].get<double>()*cm}, 2);
     FC_mat->SetMaterialPropertiesTable(mpt_FC);
 
     G4double d_cryo = config_FC["distance_to_wall"].get<double>()*cm; // distance from the membrane
-
     //Starting with the vertical bars
     G4double FCv_sizeX = config_FC["vertical_bar"][0].get<double>()*cm;
     G4double FCv_sizeY = config_FC["vertical_bar"][1].get<double>()*cm;
     G4double FCv_sizeZ = config_FC["vertical_bar"][2].get<double>()*cm;
     G4double FCv_distance = config_FC["vertical_bar_distance"].get<double>()*cm;
+
+    G4cout << "FC Distance from Membrane: " << d_cryo/m << "m" << std::endl;
+    G4cout << "FC Vertical bar dimensions: " << FCv_sizeX/m << " m X " <<  FCv_sizeY/m << " m X " << FCv_sizeZ/m << " m" << std::endl;
+    G4cout << "FC Vertical bar distance: " << FCv_distance/m << "m" << std::endl;
 
     G4Box* solidBARv = new G4Box("vertical_bar",0.5*FCv_sizeX, 0.5*FCv_sizeY, 0.5*FCv_sizeZ);
     G4Box* solidBARv2 = new G4Box("vertical_bar2",0.5*FCv_sizeZ, 0.5*FCv_sizeY, 0.5*FCv_sizeX);
@@ -266,14 +275,19 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     double cut_value1 = config_FC["cut_horizontal_bar1"].get<double>()*cm;
     double cut_value2 = config_FC["cut_horizontal_bar2"].get<double>()*cm;
 
+    G4cout << "FC Horizontal Bar 1 elipse major axis: " << barH_eixoX1/m  << " m" << std::endl;
+    G4cout << "FC Horizontal Bar 1 elipse minor axis: " << barH_eixoY1/m  << " m" << std::endl;
+    G4cout << "FC Horizontal Bar 1 length/cut: " << cut_value1/m  << " m" << std::endl;
+    G4cout << "FC Horizontal Bar 2 elipse major axis: " << barH_eixoX2/m  << " m" << std::endl;
+    G4cout << "FC Horizontal Bar 2 elipse minor axis: " << barH_eixoY2/m  << " m" << std::endl;
+    G4cout << "FC Horizontal Bar 2 length/cut: " << cut_value2/m  << " m" << std::endl;
+
     double barH_length = cryostat_sizeX-2*d_cryo-FCv_sizeX;
     double barH_length_end = cryostat_sizeZ-2*d_cryo-FCv_sizeZ-2*cut_value1;
 
     std::vector<G4TwoVector> ellipse1;
     double lastY=1e30; // inicializa com valor impossível
-
     int npoints = 120;
-
     for (int i = 0; i < npoints; i++) 
     {
         double phi = 2*CLHEP::pi*i/npoints;
@@ -292,7 +306,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     std::vector<G4TwoVector> ellipse2;
     lastY = 1e30;
-
     for (int i = 0; i < npoints; i++) 
     {
         double phi = 2*CLHEP::pi*i/npoints;
@@ -310,10 +323,12 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     auto solidBARh1 = new G4ExtrudedSolid("solidEllipse1", ellipse1,  barH_length/2, G4TwoVector(0,0), 1.0,   G4TwoVector(0,0), 1.0);  
     auto solidBARh2 = new G4ExtrudedSolid("solidEllipse2", ellipse2,  barH_length/2, G4TwoVector(0,0), 1.0,   G4TwoVector(0,0), 1.0);  
     G4double FCh_distance = config_FC["horizontal_bar_distance"].get<double>()*cm;
+    G4cout << "FC Horizontal bar distance: " << FCh_distance/m << " m" << std::endl;
     int n_barh_long = (FCv_sizeY)/FCh_distance;    
 
     G4UnionSolid* FCh_united =  new G4UnionSolid("FCh_longwall_template", solidBARh2, solidBARh2, 0, G4ThreeVector(FCh_distance,0,0));
     double sep_bar_type = config_FC["sep_bar_type"].get<double>()*cm;
+    G4cout << "FC Horizontal bar type separation: " << sep_bar_type/m << " m" << std::endl;
 
     auto solidBARh1_end = new G4ExtrudedSolid("solidEllipse1_end", ellipse1,  barH_length_end/2, G4TwoVector(0,0), 1.0,   G4TwoVector(0,0), 1.0);  
     auto solidBARh2_end = new G4ExtrudedSolid("solidEllipse2_end", ellipse2,  barH_length_end/2, G4TwoVector(0,0), 1.0,   G4TwoVector(0,0), 1.0); 
@@ -394,6 +409,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     surface_FC_lar-> SetType(dielectric_metal);
     surface_FC_lar-> SetFinish(polished);
     G4MaterialPropertiesTable* mpt_FCLar_Surface = new G4MaterialPropertiesTable();
+    G4cout << "FC Reflectivity: " << config_FC["reflectivity"].get<double>() << std::endl;
+
     mpt_FCLar_Surface->AddProperty("REFLECTIVITY",{0.1*eV,15*eV}, {config_FC["reflectivity"].get<double>(),config_FC["reflectivity"].get<double>()},2);
     surface_FC_lar->SetMaterialPropertiesTable(mpt_FCLar_Surface);
 
@@ -410,6 +427,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     auto config_Acrylic = config["Acrylic"];
 
     auto density_acry = config_Acrylic["density"].get<double>()*g/cm3;
+    G4cout << "Acrylic Density: " << density_acry*cm3/g << " g/cm3" << std::endl;
     std::vector<G4int>    natoms_acrylic = config_Acrylic["n_elements"].get<std::vector<G4int>>();
     std::vector<G4String> elements_acrylic = config_Acrylic["elements"].get<std::vector<G4String>>();
 
@@ -417,35 +435,39 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     std::string file_acrylic_index = config_Acrylic["refraction_index"].get<string>();
     std::ifstream f_acrylic_index(std::string("../configuration/")+file_acrylic_index);
     
+    G4cout << "Acrylic Refraction Index: " << std::endl;
     json data_acry = json::parse(f_acrylic_index);
     size_t n_rindex_acry = data_acry.size();
     std::vector<G4double> energies_r_acry(n_rindex_acry);
-    std::vector<G4double> rindex_acry(n_rindex_acry);
-   
+    std::vector<G4double> rindex_acry(n_rindex_acry); 
     for (size_t i = 0; i < n_rindex_acry; i++) 
     {
         energies_r_acry[i] = data_acry[i]["E"].get<double>()*eV;  
         rindex_acry[i]   = data_acry[i]["r"].get<double>();
+        G4cout <<   energies_r_acry[i]/eV << " eV -- " << rindex_acry[i] << std::endl;  
     }
+    G4cout << "Acrylic Absorption Length: " << std::endl;
     std::string file_acrylic_length = config_Acrylic["abs_length"].get<string>();
     std::ifstream f_acrylic_length(std::string("../configuration/")+file_acrylic_length);
     json data_acry_length = json::parse(f_acrylic_length);
     size_t n_abs_acry_len = data_acry_length.size() ;
     std::vector<G4double> absE_acry(n_abs_acry_len);
     std::vector<G4double> absLen_acry(n_abs_acry_len);
-   
     for (size_t i=0; i<n_abs_acry_len; i++) 
     {
         absE_acry[i] = data_acry_length[i]["E"].get<double>()*eV;    
-        absLen_acry[i] = data_acry_length[i]["l"].get<double>()*m;  
+        absLen_acry[i] = data_acry_length[i]["l"].get<double>()*m;
+        G4cout <<   absE_acry[i]/eV << " eV -- " << absLen_acry[i]/m << " m" <<std::endl;   
        
     }
     int n_abs_elem = 3;
+    G4cout << "Acrylic Elements: " << std::endl;
     G4Material* Acry_mat = new G4Material("My_Acrylic",density_acry,n_abs_elem);
     for (size_t i=0; i<n_abs_elem; i++) 
     {
         G4Element* elem = fNistManager->FindOrBuildElement(elements_acrylic[i]);
         Acry_mat->AddElement(elem,natoms_acrylic[i]);
+        G4cout <<  elements_acrylic[i] << " -- " << natoms_acrylic[i] << std::endl;   
     }
 
     mpt_Acry->AddProperty("RINDEX", energies_r_acry, rindex_acry, n_rindex_acry);
@@ -456,6 +478,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     double acrylic_Y = FCv_sizeY;
     double acrylic_Z = cryostat_sizeZ-2*d_cryo-FCv_sizeZ-2*cut_value1;
     double acry_thickness = config_Acrylic["thickness"].get<double>()*cm;
+    G4cout << "Acrylic Thickness: " << acry_thickness/m << " m" << std::endl;
     auto acrylic_wall_long = new G4Box("Acrylic_long", 0.5*acrylic_X, 0.5*acrylic_Y, 0.5*acry_thickness);
     auto acrylic_wall_end = new G4Box("Acrylic_end",  0.5*acry_thickness, 0.5*acrylic_Y, 0.5*acrylic_Z);
     auto logical_Acrylic_wall_long = new G4LogicalVolume(acrylic_wall_long, Acry_mat , "Acrylic_long");
@@ -528,22 +551,24 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("Acrylic4-->FC2h", physicalAcrylical4, physicalFC2_h , surface_FC_lar );
     new G4LogicalBorderSurface("Acrylic4-->FC3h", physicalAcrylical4, physicalFC3_h , surface_FC_lar );
     new G4LogicalBorderSurface("Acrylic4-->FC4h", physicalAcrylical4, physicalFC4_h , surface_FC_lar );
-
    
     //-----------------   Inserting PEN -------------------------------
 
     auto config_PEN = config["PEN"];
     auto density_PEN = config_PEN["density"].get<double>()*g/cm3;
+    G4cout << "PEN Density: " << density_PEN*cm3/g << " g/cm3" << std::endl;
     std::vector<G4int>  natoms_PEN = config_PEN["n_elements"].get<std::vector<G4int>>();
     std::vector<G4String> elements_PEN = config_PEN["elements"].get<std::vector<G4String>>();
     int n_pen = 3;
     G4Material* PEN_mat = new G4Material("My_PEN",density_PEN,n_pen);
+    G4cout << "PEN Elements: " << std::endl;
     for (size_t i=0; i<n_pen; i++) 
     {
         G4Element* elem = fNistManager->FindOrBuildElement(elements_PEN[i]);
         PEN_mat->AddElement(elem,natoms_PEN[i]);
+        G4cout <<  elements_PEN[i] << " -- " << natoms_PEN[i] << std::endl;   
     }
-
+    G4cout << "PEN Absorption Length: " << std::endl;
     std::string file_PEN_abs = config_PEN["abs_length"].get<string>();
     std::ifstream f_pen_abs(std::string("../configuration/")+file_PEN_abs);
     json data_pen = json::parse(f_pen_abs);
@@ -554,8 +579,10 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     {
         energies_abs_pen[i] = data_pen[i]["E"].get<double>()*eV;  
         abs_pen[i] = data_pen[i]["l"].get<double>()*mm;
+        G4cout <<   energies_abs_pen[i]/eV << " eV -- " << abs_pen[i]/m << " m" <<std::endl;   
     }
 
+    G4cout << "PEN Emissium Spectrum: " << std::endl;
     std::string file_PEN_em = config_PEN["emissium"].get<string>();
     std::ifstream f_pen_em(std::string("../configuration/")+file_PEN_em);
     json data_pen_em = json::parse(f_pen_em);
@@ -566,12 +593,19 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     {
         energies_em_pen[i] = data_pen_em[i]["E"].get<double>()*eV;  
         em_pen[i] = data_pen_em[i]["l"].get<double>();
+        G4cout <<   energies_em_pen[i]/eV << " eV -- " << em_pen[i] <<std::endl;   
     }
 
     auto mpt_PEN = new G4MaterialPropertiesTable();
     auto refraction_index_pen = config_PEN["refraction_index"].get<double>();
     auto time_constant_pen=config_PEN["time_constant"].get<double>()*ns;
     auto eff_pen=config_PEN["efficiency"];
+
+    G4cout << "PEN Refraction Index: " << refraction_index_pen << std::endl;
+    G4cout << "PEN Efficiency " << eff_pen << std::endl;
+    G4cout << "PEN Time constant: " << time_constant_pen/ns << " ns"<< std::endl;
+    G4cout << "PEN Birks Constant: " << config_PEN["birks"].get<double>() << " cm/MeV" << std::endl;
+    G4cout << "PEN Mean Excitation Energy: " << config_PEN["mean_excitation"].get<double>() << " eV" << std::endl;
 
     mpt_PEN->AddProperty("RINDEX", {0.1*eV,15*eV},{refraction_index_pen,refraction_index_pen} , 2);
     mpt_PEN->AddProperty("WLSABSLENGTH", energies_abs_pen, abs_pen,n_abs_pen);
@@ -702,7 +736,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("LiquidArgonInside-->FC2h", physicalInsideArgon, physicalFC2_h , surface_FC_lar );
     new G4LogicalBorderSurface("LiquidArgonInside-->FC3h", physicalInsideArgon, physicalFC3_h , surface_FC_lar );
     new G4LogicalBorderSurface("LiquidArgonInside-->FC4h", physicalInsideArgon, physicalFC4_h , surface_FC_lar );
-
     new G4LogicalBorderSurface("LAr_Inside --> PEN1", physicalInsideArgon, physicalPEN1 , surface_PEN_lar );
     new G4LogicalBorderSurface("LAr_Inside --> PEN2", physicalInsideArgon, physicalPEN2 , surface_PEN_lar );
     new G4LogicalBorderSurface("LAr_Inside --> PEN3", physicalInsideArgon, physicalPEN3 , surface_PEN_lar );
@@ -711,7 +744,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("PEN2 -->LAr_Inside", physicalPEN2 , physicalInsideArgon, surface_PEN_lar );
     new G4LogicalBorderSurface("PEN3 -->LAr_Inside", physicalPEN3 , physicalInsideArgon, surface_PEN_lar );
     new G4LogicalBorderSurface("PEN4 -->LAr_Inside", physicalPEN4 , physicalInsideArgon, surface_PEN_lar );
-
     new G4LogicalBorderSurface("LiquidArgonInside-->AnodeTop", physicalInsideArgon, physicalTopAnode , surface_anode_lar );
     new G4LogicalBorderSurface("LiquidArgonInside-->AnodeBottom", physicalInsideArgon, physicalBottomAnode , surface_anode_lar );
 
@@ -721,29 +753,29 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     double cathode_X = config_Cathode["length_x"].get<double>()*cm; //pen_X - 2*pen_thickness;
     double cathode_Z = config_Cathode["length_z"].get<double>()*cm; //pen_Z - 2*pen_thickness;
-
     double cathode_hole_X = config_Cathode["hole_x"].get<double>()*cm;
     double cathode_hole_Y = config_Cathode["hole_y"].get<double>()*cm;
     double cathode_separation = config_Cathode["separation"].get<double>()*cm;
+    G4cout << "Cathode Size: " << cathode_X/m << " m X " << cathode_Z/m << " m" << std::endl;
+    G4cout << "Cathode Hole Size: " << cathode_hole_X/m << " m X " << cathode_hole_Y/m << " m" << std::endl;
+    G4cout << "Cathode Hole Separation: " << cathode_separation/m << " m" << std::endl;
 
-    auto cathode = new G4Box("Cathode", 0.5*cathode_X, 0.5*cryostatThickness, 0.5*cathode_Z);
+    auto cathode = new G4Box("Cathode", 0.5*Lar_inside_X, 0.5*cryostatThickness, 0.5*Lar_inside_Z);
     auto logicalCathode = new G4LogicalVolume(cathode, FC_mat, "Cathode");
-    G4VPhysicalVolume* physicalCathode = new G4PVPlacement(0, G4ThreeVector(0,0,0), logicalCathode, "Cathode", logicInsideArgon, false, 0);
+    G4VPhysicalVolume* physicalCathode = new G4PVPlacement(0, G4ThreeVector(0,0,0), logicalCathode, "Cathode", logicInsideArgon, false, 0,true);
 
-    
     // ----------- Inserting VIKUITI over and under cathode -------------
-
+    
     auto Reflector_thickness = config_Reflector["thickness"].get<double>()*cm;
+    G4cout << "Vikuiti Cathode Thickness: " << Reflector_thickness/m << " m" << std::endl;
     G4Material* Reflector_mat = fNistManager->FindOrBuildMaterial(config_Reflector["material"].get<string>());
     Reflector_mat->SetMaterialPropertiesTable(mpt_Cryo);
 
-    auto reflector = new G4Box("Reflector", 0.5*cathode_X, 0.5*Reflector_thickness, 0.5*cathode_Z);
+    auto reflector = new G4Box("Reflector", 0.5*Lar_inside_X, 0.5*Reflector_thickness, 0.5*Lar_inside_Z);
     G4LogicalVolume* logicReflector = new G4LogicalVolume(reflector,Reflector_mat,"Reflector");
-
     G4VisAttributes* visReflector = new G4VisAttributes(G4Colour(0.,0.5,0.9));
     visReflector->SetForceSolid(true);
     logicReflector->SetVisAttributes(visReflector); 
-
     G4VPhysicalVolume* physicalReflectorTop = new G4PVPlacement(0,G4ThreeVector(0,(cryostatThickness+Reflector_thickness)/2,0)
         ,logicReflector,"My_Reflector",logicInsideArgon,true,1,checkOverlaps);
     G4VPhysicalVolume* physicalReflectorBottom = new G4PVPlacement(0,G4ThreeVector(0,-(cryostatThickness+Reflector_thickness)/2,0)
@@ -751,7 +783,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
       //-------------- Inserting PEN over on top of both Reflector ----------
 
-    auto Pen_cathode = new G4Box("PEN_cathode", 0.5*cathode_X, 0.5*pen_thickness, 0.5*cathode_Z);
+    auto Pen_cathode = new G4Box("PEN_cathode", 0.5*Lar_inside_X, 0.5*pen_thickness, 0.5*Lar_inside_Z);
     G4LogicalVolume* logicPENCathode = new G4LogicalVolume(Pen_cathode,PEN_mat,"PEN_Cathode");
 
     logicPENCathode->SetVisAttributes(visPEN); 
@@ -769,19 +801,18 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     int n_cathode_y = (cathode_Z+cathode_separation)/(cathode_hole_Y+cathode_separation);
 
     auto hole_percentage = config_PEN["hole_size_percentage"].get<double>();
+    G4cout << "PEN/VIKUITI Hole in Cathode: " << hole_percentage << std::endl;
     double pen_hole_X = sqrt(hole_percentage)*cathode_hole_X;
     double pen_hole_Y = sqrt(hole_percentage)*cathode_hole_Y;
 
     auto Reflectorhole = new G4Box("Reflector_Hole_argon", 0.5*pen_hole_X, 0.5*(Reflector_thickness), 0.5*pen_hole_Y);
     auto logicalReflectorHole = new G4LogicalVolume(Reflectorhole, lar_mat_inside, "Reflector_Hole_argon");
-
     auto PENhole = new G4Box("Reflector_Hole_argon", 0.5*pen_hole_X, 0.5*(pen_thickness), 0.5*pen_hole_Y);
     auto logicalPENHole = new G4LogicalVolume(PENhole, lar_mat_inside, "PEN_Hole_argon");
  
     G4VisAttributes* visArgon = new G4VisAttributes(G4Colour(0.7,0.85,0.9));
     visArgon->SetVisibility(true);
     visArgon->SetForceSolid(true);
-
     logicalHole->SetVisAttributes(visArgon); 
     logicalReflectorHole->SetVisAttributes(visArgon); 
     logicalPENHole->SetVisAttributes(visArgon); 
@@ -825,25 +856,17 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
         }
     }
+
     new G4LogicalBorderSurface("LiquidArgon-->Cathode", physicalWorld, physicalCathode , surface_FC_lar );
     new G4LogicalBorderSurface("LiquidArgon-->ReflectorT", physicalWorld, physicalReflectorTop , surface_cryo_lar );
     new G4LogicalBorderSurface("LiquidArgon-->ReflectorB", physicalWorld, physicalReflectorBottom , surface_cryo_lar );
     new G4LogicalBorderSurface("LiquidArgonInside-->Cathode", physicalInsideArgon, physicalCathode , surface_FC_lar );
     new G4LogicalBorderSurface("LiquidArgonInside-->ReflectorT", physicalInsideArgon, physicalReflectorTop , surface_cryo_lar );
     new G4LogicalBorderSurface("LiquidArgonInside-->ReflectorB", physicalInsideArgon, physicalReflectorBottom , surface_cryo_lar );
-
-    G4VisAttributes* visCathode = new G4VisAttributes(G4Colour(0.9,0.9,0.9));
-    visCathode->SetForceSolid(true);
-    //visCathode->SetVisibility(false);
-
-    logicalCathode->SetVisAttributes(visCathode); 
-    
-    // --- Surface cathode grid com PEN e Vikuiti with PEN------
     new G4LogicalBorderSurface("PEN1 --> Cathode Grid", physicalPEN1 , physicalCathode, surface_FC_lar );
     new G4LogicalBorderSurface("PEN2 --> Cathode Grid", physicalPEN2 , physicalCathode, surface_FC_lar );
     new G4LogicalBorderSurface("PEN3 --> Cathode Grid", physicalPEN3 , physicalCathode, surface_FC_lar );
     new G4LogicalBorderSurface("PEN4 --> Cathode Grid", physicalPEN4 , physicalCathode, surface_FC_lar );
-
     new G4LogicalBorderSurface("PEN1 --> ReflectorT", physicalPEN1 , physicalReflectorTop, surface_cryo_lar );
     new G4LogicalBorderSurface("PEN2 --> ReflectorT", physicalPEN2 , physicalReflectorTop, surface_cryo_lar );
     new G4LogicalBorderSurface("PEN3 --> ReflectorT", physicalPEN3 , physicalReflectorTop, surface_cryo_lar );
@@ -852,18 +875,21 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("PEN2 --> ReflectorG", physicalPEN2 , physicalReflectorBottom, surface_cryo_lar );
     new G4LogicalBorderSurface("PEN3 --> ReflectorG", physicalPEN3 , physicalReflectorBottom, surface_cryo_lar );
     new G4LogicalBorderSurface("PEN4 --> ReflectorG", physicalPEN4 , physicalReflectorBottom, surface_cryo_lar );
-
     new G4LogicalBorderSurface("PENTop --> ReflectorT", physicalPENTop , physicalReflectorTop, surface_cryo_lar );
     new G4LogicalBorderSurface("PENTop --> LAr", physicalPENTop , physicalWorld, surface_PEN_lar );
     new G4LogicalBorderSurface("LAr --> PENTop",  physicalWorld, physicalPENTop , surface_PEN_lar );
     new G4LogicalBorderSurface("PENTop --> LArInside", physicalPENTop , physicalInsideArgon, surface_PEN_lar );
     new G4LogicalBorderSurface("LArInside --> PENTop",  physicalInsideArgon, physicalPENTop , surface_PEN_lar );
-
     new G4LogicalBorderSurface("PENBottom --> ReflectorBottom", physicalPENBottom , physicalReflectorBottom, surface_cryo_lar );
     new G4LogicalBorderSurface("PENBottom --> LAr", physicalPENBottom , physicalWorld, surface_PEN_lar );
     new G4LogicalBorderSurface("LAr --> PENBottom",  physicalWorld, physicalPENBottom , surface_PEN_lar );
     new G4LogicalBorderSurface("PENBottom --> LArInside", physicalPENBottom , physicalInsideArgon, surface_PEN_lar );
     new G4LogicalBorderSurface("LArInside --> PENBottom",  physicalInsideArgon, physicalPENBottom , surface_PEN_lar );
+
+    G4VisAttributes* visCathode = new G4VisAttributes(G4Colour(0.9,0.9,0.9));
+    visCathode->SetForceSolid(true);
+    //visCathode->SetVisibility(false);
+    logicalCathode->SetVisAttributes(visCathode); 
 
     // ------------- Assembling the SiPMs  ---------------------
 
@@ -872,17 +898,21 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4Material* SiPM_mat     = fNistManager->FindOrBuildMaterial("G4_Si");
     G4double rindex_SiPM    = config_SiPM["refraction_index"].get<double>();
     G4double abslength_SiPM = config_SiPM["abs_length"].get<double>()*cm;
-
     G4double size_SiPM = config_SiPM["size"].get<double>()*cm;
     G4double thickness_SiPM = config_SiPM["thickness"].get<double>()*cm;
     G4double dv_SiPM = config_SiPM["distance_vertical"].get<double>()*cm;
     G4double dh_SiPM = config_SiPM["distance_horizontal"].get<double>()*cm;
     G4double SiPM_reflective = config_SiPM["reflectance"].get<double>();
-    
     std::vector<std::vector<std::string>> matrix_pos = config_SiPM["map_ldu"].get<std::vector<std::vector<std::string>>>(); //[i][j] = [linha][coluna]
+    G4cout << "SiPM Refraction Index: " << rindex_SiPM << std::endl;
+    G4cout << "SiPM Absorption Length: " << abslength_SiPM/m << " m" << std::endl;
+    G4cout << "SiPM Size Single Unity Matriz: " << size_SiPM/m << " m" << std::endl;
+    G4cout << "SiPM Thickness: " << thickness_SiPM/m << " m" << std::endl;
+    G4cout << "SiPM Vertical Distance: " << dv_SiPM/m << " m" << std::endl;
+    G4cout << "SiPM Horizontal Distance: " << dh_SiPM/m << " m" << std::endl;
+    G4cout << "SiPM Reflective: " << SiPM_reflective << std::endl;
 
     int size=2;
-  
     G4double* RIndex_array   = new G4double[size];
     G4double* abs_array   = new G4double[size];
     for (int i=0; i<size; i++) 
@@ -916,12 +946,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     mpt_surface->AddProperty("REFLECTIVITY", photonEnergy, reflectivity, 2);
     sipmSurface->SetMaterialPropertiesTable(mpt_surface);
 
-    std::vector<std::vector<G4ThreeVector>> base_shifts(
-        4, std::vector<G4ThreeVector>(4, G4ThreeVector(0,0,0))
-    );
-    std::vector<std::vector<G4ThreeVector>> base_shifts_end(
-        4, std::vector<G4ThreeVector>(4, G4ThreeVector(0,0,0))
-    );
+    std::vector<std::vector<G4ThreeVector>> base_shifts(4, std::vector<G4ThreeVector>(4, G4ThreeVector(0,0,0)));
+    std::vector<std::vector<G4ThreeVector>> base_shifts_end(4, std::vector<G4ThreeVector>(4, G4ThreeVector(0,0,0)));
     for(int i=0;i<4;i++)
     {
         for(int j=0;j<4;j++)
@@ -939,7 +965,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     std::vector<G4PVPlacement*> sipm_physicals;
     sipm_physicals.clear();
-
     int n_ldu_x = cryostat_sizeX/dh_SiPM;
     int n_ldu_y = cryostat_sizeY/dv_SiPM;
 
