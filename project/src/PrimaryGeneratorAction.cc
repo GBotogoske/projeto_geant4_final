@@ -120,7 +120,14 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
         if (std::abs(k.dot(temp)) > 0.99) temp = G4ThreeVector(0,1,0);
 
         // gera vetor perpendicular
-        G4ThreeVector pol = (temp - k*(k.dot(temp))).unit();
+        // gera base ortonormal: u, v no plano perpendicular a k
+        G4ThreeVector u = (temp - k*(k.dot(temp))).unit();
+        G4ThreeVector v = k.cross(u);
+
+        // sorteia ângulo entre 0 e 2π
+        G4double alpha = 2*M_PI*G4UniformRand();
+        // combinação linear que continua ortogonal a k
+        G4ThreeVector pol = std::cos(alpha)*u + std::sin(alpha)*v;
 
         fParticleGun->SetParticlePolarization(pol);
 

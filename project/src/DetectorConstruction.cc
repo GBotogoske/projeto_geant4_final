@@ -240,7 +240,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4double FCv_distance = config_FC["vertical_bar_distance"].get<double>()*cm;
 
     G4Box* solidBARv = new G4Box("vertical_bar",0.5*FCv_sizeX, 0.5*FCv_sizeY, 0.5*FCv_sizeZ);
-    
+    G4Box* solidBARv2 = new G4Box("vertical_bar2",0.5*FCv_sizeZ, 0.5*FCv_sizeY, 0.5*FCv_sizeX);
+  
     int n_barv_long = (cryostat_sizeX-2*d_cryo)/FCv_distance;
     G4UnionSolid* FCv_united =  new G4UnionSolid("FCv_longwall_template", solidBARv, solidBARv, 0, G4ThreeVector(FCv_distance,0,0));
     for(int i=1;i<n_barv_long/2;i++)
@@ -250,11 +251,11 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     } 
 
     int n_barv_end = (cryostat_sizeZ-2*d_cryo)/FCv_distance;
-    G4UnionSolid* FCv_united_end =  new G4UnionSolid("FCv_endwall_template", solidBARv, solidBARv, 0, G4ThreeVector(0,0,FCv_distance));
+    G4UnionSolid* FCv_united_end =  new G4UnionSolid("FCv_endwall_template", solidBARv2, solidBARv2, 0, G4ThreeVector(0,0,FCv_distance));
     for(int i=1;i<n_barv_end/2;i++)
     {
-        FCv_united_end = new G4UnionSolid("FCv_endwall_template", FCv_united_end, solidBARv, 0, G4ThreeVector(0,0,(i+1)*FCv_distance));
-        FCv_united_end = new G4UnionSolid("FCv_endwall_template", FCv_united_end, solidBARv, 0, G4ThreeVector(0,0,(-i)*FCv_distance));     
+        FCv_united_end = new G4UnionSolid("FCv_endwall_template", FCv_united_end, solidBARv2, 0, G4ThreeVector(0,0,(i+1)*FCv_distance));
+        FCv_united_end = new G4UnionSolid("FCv_endwall_template", FCv_united_end, solidBARv2, 0, G4ThreeVector(0,0,(-i)*FCv_distance));     
     } 
 
     double barH_eixoX1 = config_FC["horizontal_bar_1_majorAxis"].get<double>()*cm;
@@ -320,7 +321,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     for(int i=1;i<n_barh_long/2;i++)
     {
-        if((i+1)*FCh_distance - FCh_distance/2 > sep_bar_type)
+        if(((i+1)*FCh_distance - FCh_distance/2) >= sep_bar_type)
         {
             FCh_united = new G4UnionSolid("FCh_longwall_template", FCh_united, solidBARh1, 0, G4ThreeVector((i+1)*FCh_distance,0,0));
             FCh_united = new G4UnionSolid("FCh_longwall_template", FCh_united, solidBARh1, 0, G4ThreeVector((-i)*FCh_distance,0,0));
