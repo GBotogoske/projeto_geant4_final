@@ -3,6 +3,7 @@
 
 #include "G4UserRunAction.hh"
 #include "G4Accumulable.hh"
+#include "G4AccumulableManager.hh"
 #include "globals.hh"
 
 class G4Run;
@@ -23,10 +24,17 @@ class RunAction : public G4UserRunAction
     G4String GetNameOfOutputFile() const { return fOutputFileName;};
 
     void  GetInstance();
+    
+    void AddPenCount(G4int n)
+    {
+        fPenCount += n;
+    };
 
   private:
     RunActionMessenger *fRunMessenger;
     G4String fOutputFileName;
+
+    G4Accumulable<G4int> fPenCount;
 };
 
 #endif

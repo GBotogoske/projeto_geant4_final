@@ -14,8 +14,9 @@
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-RunAction::RunAction(): G4UserRunAction(), fOutputFileName("./Data")
+RunAction::RunAction(): G4UserRunAction(), fOutputFileName("./Data") //, fPenCount(0)
 {
+    //G4AccumulableManager::Instance()->RegisterAccumulable(fPenCount);
     fRunMessenger = new RunActionMessenger(this);
     G4RunManager::GetRunManager()->SetPrintProgress(1);
     G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
@@ -51,6 +52,7 @@ void RunAction::BeginOfRunAction(const G4Run*)
     fileOutput += ".root";
     G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
     analysisManager->OpenFile(fileOutput);
+    //G4AccumulableManager::Instance()->Reset();
 
 }
 
@@ -63,6 +65,15 @@ void RunAction::EndOfRunAction(const G4Run*)
     G4cout<<"[INFO]: Write the output file "<<fOutputFileName<<".root"<<G4endl;
     analysisManager->Write();
     analysisManager->CloseFile();
+
+ /*    G4AccumulableManager::Instance()->Merge();
+
+    if (IsMaster())
+    {
+        G4cout << "[INFO]: Write the output file ./Data.root" << G4endl;
+        G4cout << "Total de optical photons detectados no PEN: "
+               << fPenCount.GetValue() << G4endl;
+    } */
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

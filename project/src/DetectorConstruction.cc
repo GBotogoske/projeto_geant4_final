@@ -53,6 +53,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4double world_sizeX = config_world["size"][0].get<double>()*cm;
     G4double world_sizeY = config_world["size"][1].get<double>()*cm;
     G4double world_sizeZ = config_world["size"][2].get<double>()*cm;
+
     G4cout << "LAr World size: " << world_sizeX/m << " .m  X " << world_sizeY/m << " .m  X " << world_sizeZ/m << " .m " << std::endl;
 
     // -----  Liquid Argon Filling --------
@@ -175,9 +176,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // -----  Liquid Argon && Cryostat Interface Boundary --------
 
     G4OpticalSurface* surface_cryo_lar = new G4OpticalSurface("surface_cryo_lar");
-    surface_cryo_lar-> SetModel(unified);
-    surface_cryo_lar-> SetType(dielectric_metal);
-    surface_cryo_lar-> SetFinish(polished);
+    surface_cryo_lar->SetModel(unified);
+    surface_cryo_lar->SetType(dielectric_metal);
+    surface_cryo_lar->SetFinish(polished);
     G4MaterialPropertiesTable* mpt_CryoLar_Surface = new G4MaterialPropertiesTable();
 
     std::string file_vikuiti_reflectance = config_Reflector["reflectivity"].get<string>();
@@ -211,9 +212,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
      // -----  Liquid Argon && ANODE Interface Boundary --------
 
     G4OpticalSurface* surface_anode_lar = new G4OpticalSurface("surface_anode_lar");
-    surface_anode_lar-> SetModel(unified);
-    surface_anode_lar-> SetType(dielectric_metal);
-    surface_anode_lar-> SetFinish(polished);
+    surface_anode_lar->SetModel(unified);
+    surface_anode_lar->SetType(dielectric_metal);
+    surface_anode_lar->SetFinish(polished);
     G4MaterialPropertiesTable* mpt_AnodeLar_Surface = new G4MaterialPropertiesTable();
 
     G4cout << "Anode Reflectivity: " << config_LAr["reflectivity_anode"].get<double>() << std::endl;
@@ -405,9 +406,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // -----  Liquid Argon && FC Interface Boundary --------
 
     G4OpticalSurface* surface_FC_lar = new G4OpticalSurface("surface_FC_lar");
-    surface_FC_lar-> SetModel(unified);
-    surface_FC_lar-> SetType(dielectric_metal);
-    surface_FC_lar-> SetFinish(polished);
+    surface_FC_lar->SetModel(unified);
+    surface_FC_lar->SetType(dielectric_metal);
+    surface_FC_lar->SetFinish(polished);
     G4MaterialPropertiesTable* mpt_FCLar_Surface = new G4MaterialPropertiesTable();
     G4cout << "FC Reflectivity: " << config_FC["reflectivity"].get<double>() << std::endl;
 
@@ -750,7 +751,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // ---- Creating Cathode grid -------- 
 
     auto config_Cathode = config["Cathode_Grid"];
-
     double cathode_X = config_Cathode["length_x"].get<double>()*cm; //pen_X - 2*pen_thickness;
     double cathode_Z = config_Cathode["length_z"].get<double>()*cm; //pen_Z - 2*pen_thickness;
     double cathode_hole_X = config_Cathode["hole_x"].get<double>()*cm;
@@ -933,7 +933,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     // Surface properties
     auto sipmSurface = new G4OpticalSurface("SiPM_Surface");
-    sipmSurface->SetType(dielectric_metal);  
+    sipmSurface->SetType(dielectric_metal);
+    //sipmSurface->SetType(dielectric_dielectric);    
     sipmSurface->SetFinish(polished);
     sipmSurface->SetModel(unified);
 

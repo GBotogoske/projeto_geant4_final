@@ -65,6 +65,7 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
     {
         G4String procName = aStep->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
         G4bool checkAbsorption = G4StrUtil::contains(procName,"Absorption");
+        //G4cout << "Process:" << procName << std::endl;
 
         const auto& sipm_spectrum = SiPMSpectrum::get();
         std::vector<G4double> eff;
@@ -73,7 +74,7 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
         int n;
         if(checkAbsorption==true and G4StrUtil::contains(thisVolume,"sipmVIS"))
         {   
-            G4cout << "VIS" << std::endl;
+            //G4cout << "VIS" << std::endl;
             isVIS=true;
             eff = sipm_spectrum.get_effVIS();
             E = sipm_spectrum.get_EVIS();
@@ -81,7 +82,7 @@ G4bool SensitiveDetector::ProcessHits(G4Step *aStep, G4TouchableHistory *)
         }
         else if(checkAbsorption==true and G4StrUtil::contains(thisVolume,"sipmUV"))
         {   
-            G4cout << "UV" << std::endl;
+            //G4cout << "UV" << std::endl;
             isUV=true;
             eff = sipm_spectrum.get_effUV();
             E = sipm_spectrum.get_EUV();

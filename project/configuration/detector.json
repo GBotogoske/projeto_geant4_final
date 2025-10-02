@@ -1,7 +1,8 @@
 {
     "world": 
     {
-        "size": [6500.0, 1800, 1800]
+        "size": [6500.0, 1800, 1800],
+        "sigma": 0.5
     },
     "cryostat": 
     {
@@ -14,8 +15,8 @@
     },
     "liquid_argon":
     {
-        "refraction_index": "lar_index.json",
-        "abs_length": "lar_abslength.json",
+        "refraction_index": "lar_index_andre.json",
+        "abs_length": "lar_abslength_andre.json",
         "scintilation":
         {
             "scintilation_point": "lar_scint.json",
@@ -75,12 +76,12 @@
         "elements": ["C","H","O"],
         "n_elements": [14,10,4],
         "refraction_index": 1.65,
-        "birks": 0.012,
+        "birks": 0.015,
         "mean_excitation": 64.7,
         "abs_length": "pen_absorption.json",
         "emissium": "pen_emissium.json",
         "time_constant": 25.0,
-        "efficiency": 1.0,
+        "efficiency": 0.5,
         "hole_size_percentage": 0.5
     },
     "Reflector":
@@ -92,7 +93,7 @@
     "SiPM":
     { 
         "refraction_index": 1.5,
-        "abs_length": 0.0000001,
+        "abs_length": 0.000000001,
         "efficiency_UV": "efficiency_UV.json",
         "efficiency_VIS": "efficiency_VIS.json",
         "size": 5,
