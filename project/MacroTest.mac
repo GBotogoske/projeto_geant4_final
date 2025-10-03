@@ -1,0 +1,16 @@
+/run/initialize
+
+# Visualização mínima
+#/vis/open OGL 600x600-0+0
+#/vis/viewer/set/autoRefresh false
+#/vis/verbose errors
+#/vis/drawVolume
+
+/run/beamOn 169000000
+
+#16900000
+#
+
+#25000
+#16900000
+#64896000

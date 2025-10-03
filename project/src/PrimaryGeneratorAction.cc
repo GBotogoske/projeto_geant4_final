@@ -79,7 +79,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
         pos = G4ThreeVector(x_pos, y_pos, z_pos);
         G4VPhysicalVolume* volume = nullptr;
     
-/*         do 
+        do 
         {
             // Sorteia posição dentro do criostato
             x_pos = (-0.25 + 0.5*G4UniformRand())*m;
@@ -92,7 +92,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
                         ->GetNavigatorForTracking()
                         ->LocateGlobalPointAndSetup(pos);
               
-        }while (!volume || std::string(volume->GetName()).find(targetVolumeName) == std::string::npos); */
+        }while (!volume || std::string(volume->GetName()).find(targetVolumeName) == std::string::npos);
 
         fParticleGun->SetParticlePosition(G4ThreeVector(x_pos,y_pos,z_pos));
 
