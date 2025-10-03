@@ -71,22 +71,15 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
             fParticleGun->SetParticleEnergy(7.08*eV);  //175nm
         }
 
-        G4double x_pos = (-0.25 + 0.5*G4UniformRand())*m;
+        G4double x_pos = 0*m; //(-0.25 + 0.5*G4UniformRand())*m;
         G4double y_pos = 2*m; //(-1+2*G4UniformRand())*cryostat_sizeY/2;
         G4double z_pos = 2*m; //(-1+2*G4UniformRand())*cryostat_sizeZ/2;
-
         G4String targetVolumeName = "argon";
-
         G4ThreeVector pos;
         pos = G4ThreeVector(x_pos, y_pos, z_pos);
-
         G4VPhysicalVolume* volume = nullptr;
     
-        /* x_pos = (-0.25 + 0.5*G4UniformRand())*m;
-        y_pos = (-1 + 2*G4UniformRand())*cryostat_sizeY/2;
-        z_pos = (-1 + 2*G4UniformRand())*cryostat_sizeZ/2;
-        */
-      /*    do 
+        do 
         {
             // Sorteia posição dentro do criostato
             x_pos = (-0.25 + 0.5*G4UniformRand())*m;
@@ -98,11 +91,8 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
             volume = G4TransportationManager::GetTransportationManager()
                         ->GetNavigatorForTracking()
                         ->LocateGlobalPointAndSetup(pos);
-          
-                //G4cout << volume->GetName() << std::endl;       
-        }while (!volume || std::string(volume->GetName()).find(targetVolumeName) == std::string::npos); */
-
-        //G4cout << volume->GetName() << std::endl;
+              
+        }while (!volume || std::string(volume->GetName()).find(targetVolumeName) == std::string::npos);
 
         fParticleGun->SetParticlePosition(G4ThreeVector(x_pos,y_pos,z_pos));
 

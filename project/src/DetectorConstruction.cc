@@ -218,7 +218,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4MaterialPropertiesTable* mpt_AnodeLar_Surface = new G4MaterialPropertiesTable();
 
     G4cout << "Anode Reflectivity: " << config_LAr["reflectivity_anode"].get<double>() << std::endl;
-
     mpt_AnodeLar_Surface->AddProperty("REFLECTIVITY",{1.0*eV,15*eV},{config_LAr["reflectivity_anode"].get<double>(),config_LAr["reflectivity_anode"].get<double>()},2);
     surface_anode_lar->SetMaterialPropertiesTable(mpt_AnodeLar_Surface);
 
@@ -350,8 +349,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
             FCh_united = new G4UnionSolid("FCh_longwall_template", FCh_united, solidBARh2, 0, G4ThreeVector((-i)*FCh_distance,0,0)); 
             FCh_united_end = new G4UnionSolid("FCh_endwall_template", FCh_united_end, solidBARh2_end, 0, G4ThreeVector((i+1)*FCh_distance,0,0));
             FCh_united_end = new G4UnionSolid("FCh_endwall_template", FCh_united_end, solidBARh2_end, 0, G4ThreeVector((-i)*FCh_distance,0,0));     
-        }
-        
+        }     
     } 
     G4RotationMatrix* rotTopY = new G4RotationMatrix();
     rotTopY->rotateY(90*deg);
@@ -401,7 +399,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4VPhysicalVolume* physicalFC4_h = new G4PVPlacement( minus_rotTopZ 
         ,G4ThreeVector((cryostat_sizeX/2-d_cryo-FCv_sizeX/2-(cut_value1-barH_eixoY1/2)),-FCh_distance/2, 0),
         LogicalFCh_end,"FCh_end_wall",logicWorld,true,2,checkOverlaps);            
-    
 
     // -----  Liquid Argon && FC Interface Boundary --------
 
@@ -600,23 +597,26 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     auto mpt_PEN = new G4MaterialPropertiesTable();
     auto refraction_index_pen = config_PEN["refraction_index"].get<double>();
     auto time_constant_pen=config_PEN["time_constant"].get<double>()*ns;
-    auto eff_pen=config_PEN["efficiency"];
+    auto eff_pen=config_PEN["efficiency"].get<double>();
+    auto ray_pen=config_PEN["rayleigh_scattering"].get<double>()*um;
 
     G4cout << "PEN Refraction Index: " << refraction_index_pen << std::endl;
     G4cout << "PEN Efficiency " << eff_pen << std::endl;
     G4cout << "PEN Time constant: " << time_constant_pen/ns << " ns"<< std::endl;
     G4cout << "PEN Birks Constant: " << config_PEN["birks"].get<double>() << " cm/MeV" << std::endl;
     G4cout << "PEN Mean Excitation Energy: " << config_PEN["mean_excitation"].get<double>() << " eV" << std::endl;
+    G4cout << "PEN Rayleigh: " << ray_pen/m << " m" << std::endl;
 
-    mpt_PEN->AddProperty("RINDEX", {0.1*eV,15*eV},{refraction_index_pen,refraction_index_pen} , 2);
+    mpt_PEN->AddProperty("RINDEX",{0.1*eV,15*eV},{refraction_index_pen,refraction_index_pen} , 2);
     mpt_PEN->AddProperty("WLSABSLENGTH", energies_abs_pen, abs_pen,n_abs_pen);
     mpt_PEN->AddProperty("WLSCOMPONENT", energies_em_pen, em_pen, n_em_pen);
+    mpt_PEN->AddProperty("RAYLEIGH", {0.1*eV,15*eV} , {ray_pen, ray_pen}, 2);
     mpt_PEN->AddConstProperty("WLSTIMECONSTANT",time_constant_pen);
     mpt_PEN->AddConstProperty("WLSMEANNUMBERPHOTONS",eff_pen);
     PEN_mat->SetMaterialPropertiesTable(mpt_PEN);
     PEN_mat->GetIonisation()->SetBirksConstant(config_PEN["birks"].get<double>()*cm/MeV);
     PEN_mat->GetIonisation()->SetMeanExcitationEnergy(config_PEN["mean_excitation"].get<double>()*eV);
-
+    
     double pen_X = acrylic_X-2*acry_thickness;
     double pen_Y = acrylic_Y;
     double pen_Z = acrylic_Z-2*acry_thickness;
