@@ -2,6 +2,7 @@
 #include <TFile.h>
 #include <TTree.h>
 #include <TH2D.h>
+#include <TH1D.h>
 #include <TCanvas.h>
 #include <iostream>
 #include <vector>
@@ -15,7 +16,7 @@ void analysis(std::string filename="../build/Data.root")
     // Create 2D histogram
     TH2D *h2 = new TH2D("hvis","VIS(z,y)", 26, -6.5, 6.5, 26, -6.5, 6.5);
     TH2D *h3 = new TH2D("huv","VUV(z,y)", 26, -6.5, 6.5, 26, -6.5, 6.5);
-    
+
     // Fill the histogram
     Double_t z, y, f, f2;
     tree->SetBranchAddress("Z", &z);
@@ -108,6 +109,7 @@ void analysis(std::string filename="../build/Data.root")
     {
         for(int j=0; j<ny; j++)
         {
+            //std::cout << mat_all[i][j] << std::endl;
             lightyield_avg+=mat_all[i][j];
             cont++;
             if(mat_all[i][j]<lightyield_min)
@@ -135,6 +137,17 @@ void analysis(std::string filename="../build/Data.root")
     h4->Draw("COLZ");  // COLZ = color map
     c5->SaveAs("heatmapAll.png");
 
+    TH1D *h1d = new TH1D("hist_franc","Histogram Francesco", 100, 0 , 210 );
+    for(int i=0; i<nx; i++)        
+    {
+        for(int j=0; j<ny; j++)
+        {
+            h1d->Fill(mat_all[i][j]);
+        }
+    }
+    TCanvas *c6 = new TCanvas();
+    h1d->Draw();  // COLZ = color map
+    c6->SaveAs("histFrancesco.png");
 
 }
 

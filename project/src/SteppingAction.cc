@@ -45,6 +45,10 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
                 runAction->AddPenCount(1);
             }
         }
+        if((G4StrUtil::contains(PreVolName,"Vikuiti")  && G4StrUtil::contains(PostVolName,"argon")) || (G4StrUtil::contains(PreVolName,"Reflector")  && G4StrUtil::contains(PostVolName,"PEN")))
+        {
+            std::cout << "oba!!!" << std::endl;
+        }
     }
 
     /* auto track = step->GetTrack();

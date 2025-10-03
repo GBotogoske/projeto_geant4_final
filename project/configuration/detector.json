@@ -8,15 +8,15 @@
     {
         "size": [6000.0, 1300.0, 1300.0],
         "thickness": 0.8,
-        "material": "G4_STAINLESS-STEEL",
+        "material": "G4_Al",
         "refraction_index": 1.7,
         "abs_length": 0.0001,
         "filling": "G4_lAr"
     },
     "liquid_argon":
     {
-        "refraction_index": "lar_index_andre.json",
-        "abs_length": "lar_abslength_andre.json",
+        "refraction_index": "lar_index.json",
+        "abs_length": "lar_abslength.json",
         "scintilation":
         {
             "scintilation_point": "lar_scint.json",
@@ -28,9 +28,9 @@
             "Fast_Comp": 6,
             "Slow_Amp": 0.75,
             "Fast_Amp": 0.25,
-            "Birks": 0.069        
+            "Birks": 0.069
         },
-        "rayleigh_scattering": "lar_rayleigh_andre.json",
+        "rayleigh_scattering": "lar_rayleigh.json",
         "reflectivity_anode": 0.3
     },
     "FC":
@@ -87,9 +87,13 @@
     },
     "Reflector":
     {
+        "refraction_index": 1.5,
         "thickness": 0.1,
         "material": "G4_KAPTON",
-        "reflectivity": "vikuiti_reflectance_andre.json"
+        "reflectivity": "vikuiti_reflectance.json",
+        "spectrum": "vikuiti_spectrum.json",
+        "efficiency": 0.2,
+        "absorption": "vikuiti_abs.json"
     },
     "SiPM":
     { 
@@ -101,7 +105,7 @@
         "thickness": 0.8,
         "distance_vertical": 100.0,
         "distance_horizontal": 100.0,
-        "reflectance": 0.0,
+        "reflectance": 0.2,
         "map_ldu": [["V","V","V","V"],
                     ["V","U","V","V"],
                     ["V","V","V","V"],

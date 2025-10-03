@@ -59,6 +59,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     // -----  Liquid Argon Filling --------
     auto config_LAr = config["liquid_argon"];
     auto config_Reflector = config["Reflector"];
+    auto config_FC = config["FC"];
 
     auto config_cryostat = config["cryostat"];
     G4Material* lar_mat = fNistManager->FindOrBuildMaterial(config_cryostat["filling"].get<string>());
@@ -155,7 +156,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4double cryostat_sizeZ = config_cryostat["size"][2].get<double>()*cm;
     G4double cryostatThickness = config_cryostat["thickness"].get<double>()*cm;
 
-    G4cout << "Cryostat Interal size: " << cryostat_sizeX/m << " m  X " << cryostat_sizeY/m << " m  X " << cryostat_sizeZ/m << " m " << std::endl;
+    G4cout << "Cryostat Internal size: " << cryostat_sizeX/m << " m  X " << cryostat_sizeY/m << " m  X " << cryostat_sizeZ/m << " m " << std::endl;
     G4cout << "Cryostat Thickness: " << cryostatThickness/m << " m " << std::endl;
     G4cout << "Cryostat Refraction Index: " << config_cryostat["refraction_index"].get<double>() << std::endl;
     G4cout << "Cryostat Absorption Length: " << config_cryostat["abs_length"].get<double>()*cm/m << "m" << std::endl;
@@ -181,6 +182,19 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     surface_cryo_lar->SetFinish(polished);
     G4MaterialPropertiesTable* mpt_CryoLar_Surface = new G4MaterialPropertiesTable();
 
+    mpt_CryoLar_Surface->AddProperty("REFLECTIVITY",{0.1*eV,15*eV}, {config_FC["reflectivity"].get<double>(),config_FC["reflectivity"].get<double>()},2);
+    surface_cryo_lar->SetMaterialPropertiesTable(mpt_CryoLar_Surface);
+    new G4LogicalBorderSurface("LiquidArgon-->Cryo", physicalWorld, physicalCryostat , surface_cryo_lar );
+
+    // --------------  ANODE ----------------------------
+    G4double AnodeTickness = 0.000000001*cm;
+    G4Box* solidAnodeTemplate = new G4Box("Anode",0.5*cryostat_sizeX, 0.5*AnodeTickness, 0.5*cryostat_sizeZ);
+    G4LogicalVolume* logicAnode = new G4LogicalVolume(solidAnodeTemplate,cryostat_mat,"Anode");
+    G4VPhysicalVolume* physicalTopAnode = new G4PVPlacement(0,G4ThreeVector(0,0.5*cryostat_sizeY-0.5*AnodeTickness,0),logicAnode,"AnodeUp",logicWorld,false,0,checkOverlaps);
+    G4VPhysicalVolume* physicalBottomAnode = new G4PVPlacement(0,G4ThreeVector(0,-(0.5*cryostat_sizeY-0.5*AnodeTickness),0),logicAnode,"AnodeDown",logicWorld,false,0,checkOverlaps);
+
+    // -------------- Vikuiti/Reflector Walls -------------
+
     std::string file_vikuiti_reflectance = config_Reflector["reflectivity"].get<string>();
     std::ifstream f_vikuiti_reflectance(std::string("../configuration/")+file_vikuiti_reflectance);
     json data_reflectance_vikuiti = json::parse(f_vikuiti_reflectance);
@@ -197,19 +211,63 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
         G4cout <<   energies_vikuiti[i]/eV << " eV -- " << r_vikuiti[i] << std::endl;  
     }
 
-    mpt_CryoLar_Surface->AddProperty("REFLECTIVITY",energies_vikuiti, r_vikuiti,n_vikuiti);
-    surface_cryo_lar->SetMaterialPropertiesTable(mpt_CryoLar_Surface);
-    new G4LogicalBorderSurface("LiquidArgon-->Cryo", physicalWorld, physicalCryostat , surface_cryo_lar );
+    G4cout << "Vikuiti Spectrum: " << std::endl;
+    std::string file_vikuiti_spectrum = config_Reflector["spectrum"].get<string>();
+    std::ifstream f_vikuiti_spectrum(std::string("../configuration/")+file_vikuiti_spectrum);
+    json data_spectrum_vikuiti = json::parse(f_vikuiti_spectrum);    
+    size_t n_vikuiti_spec = data_spectrum_vikuiti.size();
+    std::vector<G4double> energies_vikuiti_spec(n_vikuiti_spec);
+    std::vector<G4double> spec_vikuiti(n_vikuiti_spec);
+    for (size_t i = 0; i < n_vikuiti_spec; i++) 
+    {
+        energies_vikuiti_spec[i] = data_spectrum_vikuiti[i]["E"].get<double>()*eV;  
+        spec_vikuiti[i]   = data_spectrum_vikuiti[i]["r"].get<double>();
+        G4cout <<   energies_vikuiti_spec[i]/eV << " eV -- " << spec_vikuiti[i] << std::endl;  
+    }
 
-    // --------------  ANODE ----------------------------
-    G4double AnodeTickness = 0.000000001*cm;
-    G4Box* solidAnodeTemplate = new G4Box("Anode",0.5*cryostat_sizeX, 0.5*AnodeTickness, 0.5*cryostat_sizeZ);
-    G4LogicalVolume* logicAnode = new G4LogicalVolume(solidAnodeTemplate,cryostat_mat,"Anode");
-    G4VPhysicalVolume* physicalTopAnode = new G4PVPlacement(0,G4ThreeVector(0,0.5*cryostat_sizeY-0.5*AnodeTickness,0),logicAnode,"AnodeUp",logicWorld,false,0,checkOverlaps);
-    G4VPhysicalVolume* physicalBottomAnode = new G4PVPlacement(0,G4ThreeVector(0,-(0.5*cryostat_sizeY-0.5*AnodeTickness),0),logicAnode,"AnodeDown",logicWorld,false,0,checkOverlaps);
+    G4cout << "Vikuiti Absorption Length: " << std::endl;
+    std::string file_vikuiti_abslength = config_Reflector["absorption"].get<string>();
+    std::ifstream f_vikuiti_abslength(std::string("../configuration/")+file_vikuiti_abslength);
+    json data_abslength_vikuiti = json::parse(f_vikuiti_abslength);    
+    size_t n_vikuiti_abslength = data_abslength_vikuiti.size();
+    std::vector<G4double> energies_vikuiti_abslength(n_vikuiti_abslength);
+    std::vector<G4double> abslength_vikuiti(n_vikuiti_abslength);
+    std::cout << n_vikuiti_abslength << std::endl;
+    for (size_t i = 0; i < n_vikuiti_abslength; i++) 
+    {
+        energies_vikuiti_abslength[i] = data_abslength_vikuiti[i]["E"].get<double>()*eV;  
+        abslength_vikuiti[i]   = data_abslength_vikuiti[i]["l"].get<double>() * mm;
+        G4cout <<   energies_vikuiti_abslength[i]/eV << " eV -- " << abslength_vikuiti[i]/mm << " *mm" << std::endl;  
+    }
 
+    auto Vikuiti_refractionindex = config_Reflector["refraction_index"].get<double>();
+    auto Reflector_thickness = config_Reflector["thickness"].get<double>()*cm;
+    auto Vikuiti_efficiency = config_Reflector["efficiency"].get<double>();
+    G4cout << "Vikuiti Refraction Index: " << Vikuiti_refractionindex << std::endl;
+    G4cout << "Vikuiti Thickness: " << Reflector_thickness/m << " m" << std::endl;
+    G4cout << "Vikuiti Efficiency: " << Vikuiti_efficiency << std::endl;
+    G4Material* Reflector_mat = fNistManager->FindOrBuildMaterial(config_Reflector["material"].get<string>());
 
-     // -----  Liquid Argon && ANODE Interface Boundary --------
+    auto mpt_Reflector = new G4MaterialPropertiesTable();
+
+    mpt_Reflector->AddProperty("WLSABSLENGTH",energies_vikuiti_abslength,abslength_vikuiti , n_vikuiti_abslength);
+    mpt_Reflector->AddProperty("RINDEX", {0.1*eV,15*eV} , {Vikuiti_refractionindex,Vikuiti_refractionindex},2);
+    mpt_Reflector->AddProperty("WLSCOMPONENT", energies_vikuiti_spec, spec_vikuiti, n_vikuiti_spec);
+    mpt_Reflector->AddConstProperty("WLSTIMECONSTANT",0.2*ns);
+    mpt_Reflector->AddConstProperty("WLSMEANNUMBERPHOTONS",Vikuiti_efficiency);
+
+    Reflector_mat->SetMaterialPropertiesTable(mpt_Reflector);
+
+    G4Box* solidVikuitiLong = new G4Box("VikuitLong",0.5*cryostat_sizeX, 0.5*(cryostat_sizeY-2*AnodeTickness), 0.5*Reflector_thickness);
+    G4Box* solidVikuitiEnd = new G4Box("VikuitEnd", 0.5*Reflector_thickness, 0.5*(cryostat_sizeY-2*AnodeTickness), 0.5*cryostat_sizeZ);
+    G4LogicalVolume* logicVikuitiLong = new G4LogicalVolume(solidVikuitiLong,Reflector_mat,"VikuitiLong");
+    G4LogicalVolume* logicVikuitiEnd = new G4LogicalVolume(solidVikuitiEnd,Reflector_mat,"VikuitiEnd");
+    G4VPhysicalVolume* physicalVikuitiLong1 = new G4PVPlacement(0,G4ThreeVector(0,0,-(cryostat_sizeZ/2-0.5*Reflector_thickness)),logicVikuitiLong,"LogicVikuiteLong",logicWorld,true,1,checkOverlaps);
+    G4VPhysicalVolume* physicalVikuitiLong2 = new G4PVPlacement(0,G4ThreeVector(0,0,(cryostat_sizeZ/2-0.5*Reflector_thickness)),logicVikuitiLong,"LogicVikuiteLong",logicWorld,true,2,checkOverlaps);
+    G4VPhysicalVolume* physicalVikuitiEnd1 = new G4PVPlacement(0,G4ThreeVector(-(cryostat_sizeX/2-0.5*Reflector_thickness),0,0),logicVikuitiEnd,"LogicVikuiteEnd",logicWorld,true,1,checkOverlaps);
+    G4VPhysicalVolume* physicalVikuitiEnd2 = new G4PVPlacement(0,G4ThreeVector((cryostat_sizeX/2-0.5*Reflector_thickness),0,0),logicVikuitiEnd,"LogicVikuiteEnd",logicWorld,true,2,checkOverlaps);
+
+    // -----  Liquid Argon && ANODE && Vikuiti Interface Boundary --------
 
     G4OpticalSurface* surface_anode_lar = new G4OpticalSurface("surface_anode_lar");
     surface_anode_lar->SetModel(unified);
@@ -221,12 +279,36 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     mpt_AnodeLar_Surface->AddProperty("REFLECTIVITY",{1.0*eV,15*eV},{config_LAr["reflectivity_anode"].get<double>(),config_LAr["reflectivity_anode"].get<double>()},2);
     surface_anode_lar->SetMaterialPropertiesTable(mpt_AnodeLar_Surface);
 
+    G4OpticalSurface* surface_vikuiti_lar = new G4OpticalSurface("surface_vikuiti_lar");
+    surface_vikuiti_lar->SetModel(unified);
+    surface_vikuiti_lar->SetType(dielectric_metal);
+    surface_vikuiti_lar->SetFinish(polished);
+    G4MaterialPropertiesTable* mpt_VikuitiLar_Surface = new G4MaterialPropertiesTable();
+    mpt_VikuitiLar_Surface->AddProperty("REFLECTIVITY",energies_vikuiti,r_vikuiti,n_vikuiti);
+    mpt_VikuitiLar_Surface->AddProperty("TRANSMITTANCE",{1.0*eV,15*eV},{1,1},2);
+    surface_vikuiti_lar->SetMaterialPropertiesTable(mpt_VikuitiLar_Surface);
+
+    G4OpticalSurface* surface_vikuiti_cryo = new G4OpticalSurface("surface_vikuiti_cryo");
+    surface_vikuiti_cryo->SetModel(unified);
+    surface_vikuiti_cryo->SetType(dielectric_metal);
+    surface_vikuiti_cryo->SetFinish(polished);
+    G4MaterialPropertiesTable* mpt_VikuitiCryo_Surface = new G4MaterialPropertiesTable();
+    mpt_VikuitiCryo_Surface->AddProperty("REFLECTIVITY",{1.0*eV,15*eV},{0,0},2);
+    surface_vikuiti_cryo->SetMaterialPropertiesTable(mpt_VikuitiCryo_Surface);
+    
     new G4LogicalBorderSurface("LiquidArgon-->AnodeTop", physicalWorld, physicalTopAnode , surface_anode_lar );
     new G4LogicalBorderSurface("LiquidArgon-->AnodeBottom", physicalWorld, physicalBottomAnode , surface_anode_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->VikuitiLong1", physicalWorld, physicalVikuitiLong1 , surface_vikuiti_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->VikuitiLong2", physicalWorld, physicalVikuitiLong2 , surface_vikuiti_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->VikuitiEnd1", physicalWorld, physicalVikuitiEnd1 , surface_vikuiti_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->VikuitiEnd2", physicalWorld, physicalVikuitiEnd2 , surface_vikuiti_lar );
+    new G4LogicalBorderSurface("VikuitiLong1-->Cryo", physicalVikuitiLong1, physicalCryostat , surface_vikuiti_cryo );
+    new G4LogicalBorderSurface("VikuitiLong2-->Cryo", physicalVikuitiLong2, physicalCryostat , surface_vikuiti_cryo );
+    new G4LogicalBorderSurface("VikuitiEnd1-->Cryo", physicalVikuitiEnd1, physicalCryostat , surface_vikuiti_cryo );
+    new G4LogicalBorderSurface("VikuitiEnd2-->Cryo", physicalVikuitiEnd2, physicalCryostat , surface_vikuiti_cryo );
 
     // ----------------------------------------------------------------------------
     //Assembling the field cage
-    auto config_FC = config["FC"];
     G4Material* FC_mat = fNistManager->FindOrBuildMaterial(config_FC["material"].get<string>());
 
     G4cout << "FC Refraction Index: " << config_FC["refraction_index"].get<double>() << std::endl;
@@ -377,7 +459,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     LogicalFCh_wall->SetVisAttributes(visFC);
     LogicalFCh_end->SetVisAttributes(visFC);
 
-
     G4VPhysicalVolume* physicalFC1_v = new G4PVPlacement(0,G4ThreeVector(-FCv_distance/2,0,cryostat_sizeZ/2-d_cryo),
         LogicalFCv_wall,"FCv_long_wall",logicWorld,true,1,checkOverlaps);
     G4VPhysicalVolume* physicalFC2_v = new G4PVPlacement(0,G4ThreeVector(-FCv_distance/2,0,-cryostat_sizeZ/2+d_cryo),
@@ -402,24 +483,17 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     // -----  Liquid Argon && FC Interface Boundary --------
 
-    G4OpticalSurface* surface_FC_lar = new G4OpticalSurface("surface_FC_lar");
-    surface_FC_lar->SetModel(unified);
-    surface_FC_lar->SetType(dielectric_metal);
-    surface_FC_lar->SetFinish(polished);
     G4MaterialPropertiesTable* mpt_FCLar_Surface = new G4MaterialPropertiesTable();
     G4cout << "FC Reflectivity: " << config_FC["reflectivity"].get<double>() << std::endl;
 
-    mpt_FCLar_Surface->AddProperty("REFLECTIVITY",{0.1*eV,15*eV}, {config_FC["reflectivity"].get<double>(),config_FC["reflectivity"].get<double>()},2);
-    surface_FC_lar->SetMaterialPropertiesTable(mpt_FCLar_Surface);
-
-    new G4LogicalBorderSurface("LiquidArgon-->FC1v", physicalWorld, physicalFC1_v , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgon-->FC2v", physicalWorld, physicalFC2_v , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgon-->FC3v", physicalWorld, physicalFC3_v , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgon-->FC4v", physicalWorld, physicalFC4_v , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgon-->FC1h", physicalWorld, physicalFC1_h , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgon-->FC2h", physicalWorld, physicalFC2_h , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgon-->FC3h", physicalWorld, physicalFC3_h , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgon-->FC4h", physicalWorld, physicalFC4_h , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->FC1v", physicalWorld, physicalFC1_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->FC2v", physicalWorld, physicalFC2_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->FC3v", physicalWorld, physicalFC3_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->FC4v", physicalWorld, physicalFC4_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->FC1h", physicalWorld, physicalFC1_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->FC2h", physicalWorld, physicalFC2_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->FC3h", physicalWorld, physicalFC3_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->FC4h", physicalWorld, physicalFC4_h , surface_cryo_lar );
 
     //Inserting the Acrylic --------------------------------------
     auto config_Acrylic = config["Acrylic"];
@@ -469,7 +543,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     }
 
     mpt_Acry->AddProperty("RINDEX", energies_r_acry, rindex_acry, n_rindex_acry);
-    mpt_Acry->AddProperty("ABSLENGTH", absE_acry, absLen_acry, n_abs_acry_len); 
+    mpt_Acry->AddProperty("ABSLENGTH", absE_acry, absLen_acry, n_abs_acry_len);
+   
     Acry_mat->SetMaterialPropertiesTable(mpt_Acry);
 
     double acrylic_X = cryostat_sizeX-2*d_cryo-FCv_sizeX-2*cut_value1;
@@ -513,42 +588,38 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("Acrylic4-->Argon", physicalAcrylical4, physicalWorld , surface_acrylic_lar );
     new G4LogicalBorderSurface("Argon-->Acrylic3", physicalWorld ,  physicalAcrylical3,surface_acrylic_lar );
     new G4LogicalBorderSurface("Argon-->Acrylic4", physicalWorld , physicalAcrylical4, surface_acrylic_lar ); 
-    new G4LogicalBorderSurface("Acrylic1-->Cryo", physicalAcrylical1, physicalCryostat , surface_cryo_lar );
-    new G4LogicalBorderSurface("Acrylic2-->Cryo", physicalAcrylical2, physicalCryostat , surface_cryo_lar );
-    new G4LogicalBorderSurface("Acrylic3-->Cryo", physicalAcrylical3, physicalCryostat , surface_cryo_lar );
-    new G4LogicalBorderSurface("Acrylic4-->Cryo", physicalAcrylical4, physicalCryostat , surface_cryo_lar );
-    new G4LogicalBorderSurface("Acrylic1-->FC1v", physicalAcrylical1, physicalFC1_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic1-->FC2v", physicalAcrylical1, physicalFC2_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic1-->FC3v", physicalAcrylical1, physicalFC3_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic1-->FC4v", physicalAcrylical1, physicalFC4_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic1-->FC1h", physicalAcrylical1, physicalFC1_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic1-->FC2h", physicalAcrylical1, physicalFC2_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic1-->FC3h", physicalAcrylical1, physicalFC3_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic1-->FC4h", physicalAcrylical1, physicalFC4_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic2-->FC1v", physicalAcrylical2, physicalFC1_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic2-->FC2v", physicalAcrylical2, physicalFC2_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic1-->FC3v", physicalAcrylical2, physicalFC3_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic2-->FC4v", physicalAcrylical2, physicalFC4_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic2-->FC1h", physicalAcrylical2, physicalFC1_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic2-->FC2h", physicalAcrylical2, physicalFC2_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic2-->FC3h", physicalAcrylical2, physicalFC3_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic2-->FC4h", physicalAcrylical2, physicalFC4_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic3-->FC1v", physicalAcrylical3, physicalFC1_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic3-->FC2v", physicalAcrylical3, physicalFC2_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic3-->FC3v", physicalAcrylical3, physicalFC3_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic3-->FC4v", physicalAcrylical3, physicalFC4_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic3-->FC1h", physicalAcrylical3, physicalFC1_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic3-->FC2h", physicalAcrylical3, physicalFC2_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic3-->FC3h", physicalAcrylical3, physicalFC3_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic3-->FC4h", physicalAcrylical3, physicalFC4_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic4-->FC1v", physicalAcrylical4, physicalFC1_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic4-->FC2v", physicalAcrylical4, physicalFC2_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic4-->FC3v", physicalAcrylical4, physicalFC3_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic4-->FC4v", physicalAcrylical4, physicalFC4_v , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic4-->FC1h", physicalAcrylical4, physicalFC1_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic4-->FC2h", physicalAcrylical4, physicalFC2_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic4-->FC3h", physicalAcrylical4, physicalFC3_h , surface_FC_lar );
-    new G4LogicalBorderSurface("Acrylic4-->FC4h", physicalAcrylical4, physicalFC4_h , surface_FC_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC1v", physicalAcrylical1, physicalFC1_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC2v", physicalAcrylical1, physicalFC2_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC3v", physicalAcrylical1, physicalFC3_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC4v", physicalAcrylical1, physicalFC4_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC1h", physicalAcrylical1, physicalFC1_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC2h", physicalAcrylical1, physicalFC2_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC3h", physicalAcrylical1, physicalFC3_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC4h", physicalAcrylical1, physicalFC4_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic2-->FC1v", physicalAcrylical2, physicalFC1_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic2-->FC2v", physicalAcrylical2, physicalFC2_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic1-->FC3v", physicalAcrylical2, physicalFC3_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic2-->FC4v", physicalAcrylical2, physicalFC4_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic2-->FC1h", physicalAcrylical2, physicalFC1_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic2-->FC2h", physicalAcrylical2, physicalFC2_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic2-->FC3h", physicalAcrylical2, physicalFC3_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic2-->FC4h", physicalAcrylical2, physicalFC4_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC1v", physicalAcrylical3, physicalFC1_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC2v", physicalAcrylical3, physicalFC2_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC3v", physicalAcrylical3, physicalFC3_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC4v", physicalAcrylical3, physicalFC4_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC1h", physicalAcrylical3, physicalFC1_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC2h", physicalAcrylical3, physicalFC2_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC3h", physicalAcrylical3, physicalFC3_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic3-->FC4h", physicalAcrylical3, physicalFC4_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC1v", physicalAcrylical4, physicalFC1_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC2v", physicalAcrylical4, physicalFC2_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC3v", physicalAcrylical4, physicalFC3_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC4v", physicalAcrylical4, physicalFC4_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC1h", physicalAcrylical4, physicalFC1_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC2h", physicalAcrylical4, physicalFC2_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC3h", physicalAcrylical4, physicalFC3_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("Acrylic4-->FC4h", physicalAcrylical4, physicalFC4_h , surface_cryo_lar );
    
     //-----------------   Inserting PEN -------------------------------
 
@@ -700,7 +771,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4LogicalBorderSurface("PEN3 -->LAr", physicalPEN3 , physicalWorld, surface_PEN_lar );
     new G4LogicalBorderSurface("PEN4 -->LAr", physicalPEN4 , physicalWorld, surface_PEN_lar );
 
-
     // ----- Creating liquid argon REGION inside FC with lower light yield due to the electric field -----
 
     G4Material* lar_mat_inside = fNistManager->FindOrBuildMaterial(config_cryostat["filling"].get<string>());
@@ -729,14 +799,14 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     // Re-making some surfaces but with the argon inside
 
-    new G4LogicalBorderSurface("LiquidArgonInside-->FC1v", physicalInsideArgon, physicalFC1_v , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgonInside-->FC2v", physicalInsideArgon, physicalFC2_v , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgonInside-->FC3v", physicalInsideArgon, physicalFC3_v , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgonInside-->FC4v", physicalInsideArgon, physicalFC4_v , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgonInside-->FC1h", physicalInsideArgon, physicalFC1_h , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgonInside-->FC2h", physicalInsideArgon, physicalFC2_h , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgonInside-->FC3h", physicalInsideArgon, physicalFC3_h , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgonInside-->FC4h", physicalInsideArgon, physicalFC4_h , surface_FC_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC1v", physicalInsideArgon, physicalFC1_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC2v", physicalInsideArgon, physicalFC2_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC3v", physicalInsideArgon, physicalFC3_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC4v", physicalInsideArgon, physicalFC4_v , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC1h", physicalInsideArgon, physicalFC1_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC2h", physicalInsideArgon, physicalFC2_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC3h", physicalInsideArgon, physicalFC3_h , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->FC4h", physicalInsideArgon, physicalFC4_h , surface_cryo_lar );
     new G4LogicalBorderSurface("LAr_Inside --> PEN1", physicalInsideArgon, physicalPEN1 , surface_PEN_lar );
     new G4LogicalBorderSurface("LAr_Inside --> PEN2", physicalInsideArgon, physicalPEN2 , surface_PEN_lar );
     new G4LogicalBorderSurface("LAr_Inside --> PEN3", physicalInsideArgon, physicalPEN3 , surface_PEN_lar );
@@ -766,11 +836,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
     // ----------- Inserting VIKUITI over and under cathode -------------
     
-    auto Reflector_thickness = config_Reflector["thickness"].get<double>()*cm;
-    G4cout << "Vikuiti Cathode Thickness: " << Reflector_thickness/m << " m" << std::endl;
-    G4Material* Reflector_mat = fNistManager->FindOrBuildMaterial(config_Reflector["material"].get<string>());
-    Reflector_mat->SetMaterialPropertiesTable(mpt_Cryo);
-
     auto reflector = new G4Box("Reflector", 0.5*Lar_inside_X, 0.5*Reflector_thickness, 0.5*Lar_inside_Z);
     G4LogicalVolume* logicReflector = new G4LogicalVolume(reflector,Reflector_mat,"Reflector");
     G4VisAttributes* visReflector = new G4VisAttributes(G4Colour(0.,0.5,0.9));
@@ -830,57 +895,58 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
             auto physicalHoleReflector = new G4PVPlacement(0, pos ,logicalReflectorHole,"Reflector_Hole_argon", logicReflector, true, ix*n_cathode_y + iz,false);
             auto physicalHolePEN = new G4PVPlacement(0, pos ,logicalPENHole,"PEN_Hole_argon", logicPENCathode, true, ix*n_cathode_y + iz,false);
 
-            new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->Cathode", physicalHole, physicalCathode, surface_FC_lar );
-            new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->Reflector1", physicalHole, physicalReflectorTop, surface_cryo_lar );
-            new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->Reflector2", physicalHole, physicalReflectorBottom, surface_cryo_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->Cathode", physicalHole, physicalCathode, surface_cryo_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->Reflector1", physicalHole, physicalReflectorTop, surface_vikuiti_lar);
+            new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->Reflector2", physicalHole, physicalReflectorBottom, surface_vikuiti_lar );
             new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->PEN1", physicalHole, physicalPENTop, surface_PEN_lar );
             new G4LogicalBorderSurface("LAr_in_Hole_" + std::to_string(number) + "-->PEN2", physicalHole, physicalPENBottom, surface_PEN_lar );
             new G4LogicalBorderSurface("PEN1-->LAr_in_Hole_" + std::to_string(number) , physicalPENTop,  physicalHole, surface_PEN_lar );
             new G4LogicalBorderSurface("PEN2-->LAr_in_Hole_" + std::to_string(number) , physicalPENBottom,  physicalHole, surface_PEN_lar );
 
-            new G4LogicalBorderSurface("LAr_in_Hole_Ref_" + std::to_string(number) + "-->Cathode", physicalHoleReflector, physicalCathode, surface_FC_lar );
-            new G4LogicalBorderSurface("LAr_in_Hole_Ref_" + std::to_string(number) + "-->Reflector1", physicalHoleReflector, physicalReflectorTop, surface_cryo_lar );
-            new G4LogicalBorderSurface("LAr_in_Hole_Ref_" + std::to_string(number) + "-->Reflector2", physicalHoleReflector, physicalReflectorBottom, surface_cryo_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_Ref_" + std::to_string(number) + "-->Cathode", physicalHoleReflector, physicalCathode, surface_cryo_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_Ref_" + std::to_string(number) + "-->Reflector1", physicalHoleReflector, physicalReflectorTop, surface_vikuiti_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_Ref_" + std::to_string(number) + "-->Reflector2", physicalHoleReflector, physicalReflectorBottom, surface_vikuiti_lar );
             new G4LogicalBorderSurface("LAr_in_Hole_Ref_" + std::to_string(number) + "-->PEN1", physicalHoleReflector, physicalPENTop, surface_PEN_lar );
             new G4LogicalBorderSurface("LAr_in_Hole_Ref_" + std::to_string(number) + "-->PEN2", physicalHoleReflector, physicalPENBottom, surface_PEN_lar );
             new G4LogicalBorderSurface("PEN1-->LAr_in_Hole_Ref_" + std::to_string(number) , physicalPENTop,  physicalHoleReflector, surface_PEN_lar );
             new G4LogicalBorderSurface("PEN2-->LAr_in_Hole_Ref_" + std::to_string(number) , physicalPENBottom,  physicalHoleReflector, surface_PEN_lar );
 
-            new G4LogicalBorderSurface("LAr_in_Hole_PEN_" + std::to_string(number) + "-->Cathode", physicalHolePEN, physicalCathode, surface_FC_lar );
-            new G4LogicalBorderSurface("LAr_in_Hole_PEN_" + std::to_string(number) + "-->Reflector1", physicalHolePEN, physicalReflectorTop, surface_cryo_lar );
-            new G4LogicalBorderSurface("LAr_in_Hole_PEN_" + std::to_string(number) + "-->Reflector2", physicalHolePEN, physicalReflectorBottom, surface_cryo_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_PEN_" + std::to_string(number) + "-->Cathode", physicalHolePEN, physicalCathode, surface_cryo_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_PEN_" + std::to_string(number) + "-->Reflector1", physicalHolePEN, physicalReflectorTop, surface_vikuiti_lar );
+            new G4LogicalBorderSurface("LAr_in_Hole_PEN_" + std::to_string(number) + "-->Reflector2", physicalHolePEN, physicalReflectorBottom, surface_vikuiti_lar );
             new G4LogicalBorderSurface("LAr_in_Hole_PEN_" + std::to_string(number) + "-->PEN1", physicalHolePEN, physicalPENTop, surface_PEN_lar );
             new G4LogicalBorderSurface("LAr_in_Hole_PEN_" + std::to_string(number) + "-->PEN2", physicalHolePEN, physicalPENBottom, surface_PEN_lar );
             new G4LogicalBorderSurface("PEN1-->LAr_in_Hole_PEN_" + std::to_string(number) , physicalPENTop,  physicalHolePEN, surface_PEN_lar );
             new G4LogicalBorderSurface("PEN2-->LAr_in_Hole_PEN_" + std::to_string(number) , physicalPENBottom,  physicalHolePEN, surface_PEN_lar );
-
         }
     }
 
-    new G4LogicalBorderSurface("LiquidArgon-->Cathode", physicalWorld, physicalCathode , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgon-->ReflectorT", physicalWorld, physicalReflectorTop , surface_cryo_lar );
-    new G4LogicalBorderSurface("LiquidArgon-->ReflectorB", physicalWorld, physicalReflectorBottom , surface_cryo_lar );
-    new G4LogicalBorderSurface("LiquidArgonInside-->Cathode", physicalInsideArgon, physicalCathode , surface_FC_lar );
-    new G4LogicalBorderSurface("LiquidArgonInside-->ReflectorT", physicalInsideArgon, physicalReflectorTop , surface_cryo_lar );
-    new G4LogicalBorderSurface("LiquidArgonInside-->ReflectorB", physicalInsideArgon, physicalReflectorBottom , surface_cryo_lar );
-    new G4LogicalBorderSurface("PEN1 --> Cathode Grid", physicalPEN1 , physicalCathode, surface_FC_lar );
-    new G4LogicalBorderSurface("PEN2 --> Cathode Grid", physicalPEN2 , physicalCathode, surface_FC_lar );
-    new G4LogicalBorderSurface("PEN3 --> Cathode Grid", physicalPEN3 , physicalCathode, surface_FC_lar );
-    new G4LogicalBorderSurface("PEN4 --> Cathode Grid", physicalPEN4 , physicalCathode, surface_FC_lar );
-    new G4LogicalBorderSurface("PEN1 --> ReflectorT", physicalPEN1 , physicalReflectorTop, surface_cryo_lar );
-    new G4LogicalBorderSurface("PEN2 --> ReflectorT", physicalPEN2 , physicalReflectorTop, surface_cryo_lar );
-    new G4LogicalBorderSurface("PEN3 --> ReflectorT", physicalPEN3 , physicalReflectorTop, surface_cryo_lar );
-    new G4LogicalBorderSurface("PEN4 --> ReflectorT", physicalPEN4 , physicalReflectorTop, surface_cryo_lar );
-    new G4LogicalBorderSurface("PEN1 --> ReflectorG", physicalPEN1 , physicalReflectorBottom, surface_cryo_lar );
-    new G4LogicalBorderSurface("PEN2 --> ReflectorG", physicalPEN2 , physicalReflectorBottom, surface_cryo_lar );
-    new G4LogicalBorderSurface("PEN3 --> ReflectorG", physicalPEN3 , physicalReflectorBottom, surface_cryo_lar );
-    new G4LogicalBorderSurface("PEN4 --> ReflectorG", physicalPEN4 , physicalReflectorBottom, surface_cryo_lar );
-    new G4LogicalBorderSurface("PENTop --> ReflectorT", physicalPENTop , physicalReflectorTop, surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->Cathode", physicalWorld, physicalCathode , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->ReflectorT", physicalWorld, physicalReflectorTop , surface_vikuiti_lar );
+    new G4LogicalBorderSurface("LiquidArgon-->ReflectorB", physicalWorld, physicalReflectorBottom , surface_vikuiti_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->Cathode", physicalInsideArgon, physicalCathode , surface_cryo_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->ReflectorT", physicalInsideArgon, physicalReflectorTop , surface_vikuiti_lar );
+    new G4LogicalBorderSurface("LiquidArgonInside-->ReflectorB", physicalInsideArgon, physicalReflectorBottom , surface_vikuiti_lar );
+    new G4LogicalBorderSurface("ReflectorT-->Cathode",  physicalReflectorTop ,physicalCathode, surface_vikuiti_cryo );
+    new G4LogicalBorderSurface("ReflectorB-->Cathode",  physicalReflectorBottom ,physicalCathode, surface_vikuiti_cryo );
+    new G4LogicalBorderSurface("PEN1 --> Cathode Grid", physicalPEN1 , physicalCathode, surface_cryo_lar );
+    new G4LogicalBorderSurface("PEN2 --> Cathode Grid", physicalPEN2 , physicalCathode, surface_cryo_lar );
+    new G4LogicalBorderSurface("PEN3 --> Cathode Grid", physicalPEN3 , physicalCathode, surface_cryo_lar );
+    new G4LogicalBorderSurface("PEN4 --> Cathode Grid", physicalPEN4 , physicalCathode, surface_cryo_lar );
+    new G4LogicalBorderSurface("PEN1 --> ReflectorT", physicalPEN1 , physicalReflectorTop, surface_vikuiti_lar );
+    new G4LogicalBorderSurface("PEN2 --> ReflectorT", physicalPEN2 , physicalReflectorTop, surface_vikuiti_lar );
+    new G4LogicalBorderSurface("PEN3 --> ReflectorT", physicalPEN3 , physicalReflectorTop, surface_vikuiti_lar );
+    new G4LogicalBorderSurface("PEN4 --> ReflectorT", physicalPEN4 , physicalReflectorTop, surface_vikuiti_lar );
+    new G4LogicalBorderSurface("PEN1 --> ReflectorG", physicalPEN1 , physicalReflectorBottom, surface_vikuiti_lar );
+    new G4LogicalBorderSurface("PEN2 --> ReflectorG", physicalPEN2 , physicalReflectorBottom, surface_vikuiti_lar );
+    new G4LogicalBorderSurface("PEN3 --> ReflectorG", physicalPEN3 , physicalReflectorBottom, surface_vikuiti_lar );
+    new G4LogicalBorderSurface("PEN4 --> ReflectorG", physicalPEN4 , physicalReflectorBottom, surface_vikuiti_lar );
+    new G4LogicalBorderSurface("PENTop --> ReflectorT", physicalPENTop , physicalReflectorTop, surface_vikuiti_lar );
     new G4LogicalBorderSurface("PENTop --> LAr", physicalPENTop , physicalWorld, surface_PEN_lar );
     new G4LogicalBorderSurface("LAr --> PENTop",  physicalWorld, physicalPENTop , surface_PEN_lar );
     new G4LogicalBorderSurface("PENTop --> LArInside", physicalPENTop , physicalInsideArgon, surface_PEN_lar );
     new G4LogicalBorderSurface("LArInside --> PENTop",  physicalInsideArgon, physicalPENTop , surface_PEN_lar );
-    new G4LogicalBorderSurface("PENBottom --> ReflectorBottom", physicalPENBottom , physicalReflectorBottom, surface_cryo_lar );
+    new G4LogicalBorderSurface("PENBottom --> ReflectorBottom", physicalPENBottom , physicalReflectorBottom, surface_vikuiti_lar );
     new G4LogicalBorderSurface("PENBottom --> LAr", physicalPENBottom , physicalWorld, surface_PEN_lar );
     new G4LogicalBorderSurface("LAr --> PENBottom",  physicalWorld, physicalPENBottom , surface_PEN_lar );
     new G4LogicalBorderSurface("PENBottom --> LArInside", physicalPENBottom , physicalInsideArgon, surface_PEN_lar );
@@ -937,15 +1003,21 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     //sipmSurface->SetType(dielectric_dielectric);    
     sipmSurface->SetFinish(polished);
     sipmSurface->SetModel(unified);
-
     G4MaterialPropertiesTable* mpt_surface = new G4MaterialPropertiesTable();
-
     G4double reflectivity[2] = {config_SiPM["reflectance"].get<double>() , config_SiPM["reflectance"].get<double>()};       
     G4double transmitance[2] = {1.0 , 1.0};    
-
     mpt_surface->AddProperty("TRANSMITTANCE", photonEnergy, transmitance, 2);
     mpt_surface->AddProperty("REFLECTIVITY", photonEnergy, reflectivity, 2);
     sipmSurface->SetMaterialPropertiesTable(mpt_surface);
+
+    auto sipmSurfaceVikuiti = new G4OpticalSurface("SiPM_Surface_Vikuiti");
+    sipmSurfaceVikuiti->SetType(dielectric_metal);
+    sipmSurfaceVikuiti->SetFinish(polished);
+    sipmSurfaceVikuiti->SetModel(unified);
+    G4MaterialPropertiesTable* mpt_surface2 = new G4MaterialPropertiesTable();
+    G4double reflectivity2[2] = {0.0 , 0.0};   
+    mpt_surface2->AddProperty("REFLECTIVITY", photonEnergy,reflectivity2, 2);
+    sipmSurfaceVikuiti->SetMaterialPropertiesTable(mpt_surface2);
 
     std::vector<std::vector<G4ThreeVector>> base_shifts(4, std::vector<G4ThreeVector>(4, G4ThreeVector(0,0,0)));
     std::vector<std::vector<G4ThreeVector>> base_shifts_end(4, std::vector<G4ThreeVector>(4, G4ThreeVector(0,0,0)));
@@ -979,7 +1051,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
             
             for (int side = -1; side <= 1; side += 2)
             {
-                double z_pos = side * (cryostat_sizeZ/2 - thickness_SiPM/2);               
+                double z_pos = side * (cryostat_sizeZ/2 - Reflector_thickness- thickness_SiPM/2);               
                 G4ThreeVector base(x_pos, y_pos, z_pos);
                 for(int i=0;i<4;i++)
                 {
@@ -996,6 +1068,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                                 ,logicWorld,true,cont,false));
                         }    
                         new G4LogicalBorderSurface("World_to_SiPM", physicalWorld, sipm_physicals.back(), sipmSurface);
+                        new G4LogicalBorderSurface("Vikuti_to_SiPM1", physicalVikuitiLong1, sipm_physicals.back(), sipmSurface);
+                        new G4LogicalBorderSurface("Vikuti_to_SiPM2", physicalVikuitiLong2, sipm_physicals.back(), sipmSurface);
                     }
                 }
                 cont++;
@@ -1015,7 +1089,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
             
             for (int side = -1; side <= 1; side += 2)
             {
-                double x_pos = side * (cryostat_sizeX/2 - thickness_SiPM/2);               
+                double x_pos = side * (cryostat_sizeX/2 - Reflector_thickness -thickness_SiPM/2);               
                 G4ThreeVector base(x_pos, y_pos, z_pos);
                 for(int i=0;i<4;i++)
                 {
@@ -1032,6 +1106,9 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                                 ,logicWorld,true,cont,false));
                         }    
                         new G4LogicalBorderSurface("World_to_SiPM", physicalWorld, sipm_physicals.back(), sipmSurface);
+                        new G4LogicalBorderSurface("Vikuti_to_SiPM1", physicalVikuitiEnd1, sipm_physicals.back(), sipmSurface);
+                        new G4LogicalBorderSurface("Vikuti_to_SiPM2", physicalVikuitiEnd2, sipm_physicals.back(), sipmSurface);
+
                     }
                 }
                 cont++;
