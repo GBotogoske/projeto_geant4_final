@@ -1,8 +1,7 @@
 {
     "world": 
     {
-        "size": [6500.0, 1800, 1800],
-        "sigma": 0.5
+        "size": [6500.0, 1800, 1800]
     },
     "cryostat": 
     {
@@ -10,7 +9,7 @@
         "thickness": 0.8,
         "material": "G4_Al",
         "refraction_index": 1.7,
-        "abs_length": 0.0001,
+        "abs_length": 0.000001,
         "filling": "G4_lAr"
     },
     "liquid_argon":
@@ -67,7 +66,7 @@
         "elements": ["C","H","O"],
         "n_elements": [5,8,2],
         "abs_length": "acrylic_absorption.json",
-        "refraction_index": "acrylic_index.json"
+        "refraction_index": "acrylic_index_modified.json"
     },
     "PEN":
     {
@@ -88,11 +87,12 @@
     "Reflector":
     {
         "refraction_index": 1.5,
-        "thickness": 0.1,
+        "thickness": 0.065,
         "material": "G4_KAPTON",
         "reflectivity": "vikuiti_reflectance.json",
+        "isWLS": 0,
         "spectrum": "vikuiti_spectrum.json",
-        "efficiency": 0.2,
+        "efficiency": 0.12,
         "absorption": "vikuiti_abs.json"
     },
     "SiPM":

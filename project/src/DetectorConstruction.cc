@@ -248,14 +248,22 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     G4cout << "Vikuiti Efficiency: " << Vikuiti_efficiency << std::endl;
     G4Material* Reflector_mat = fNistManager->FindOrBuildMaterial(config_Reflector["material"].get<string>());
 
+    auto Vikuiti_isWLS = config_Reflector["isWLS"].get<int>();
     auto mpt_Reflector = new G4MaterialPropertiesTable();
 
-    mpt_Reflector->AddProperty("WLSABSLENGTH",energies_vikuiti_abslength,abslength_vikuiti , n_vikuiti_abslength);
     mpt_Reflector->AddProperty("RINDEX", {0.1*eV,15*eV} , {Vikuiti_refractionindex,Vikuiti_refractionindex},2);
-    mpt_Reflector->AddProperty("WLSCOMPONENT", energies_vikuiti_spec, spec_vikuiti, n_vikuiti_spec);
-    mpt_Reflector->AddConstProperty("WLSTIMECONSTANT",0.2*ns);
-    mpt_Reflector->AddConstProperty("WLSMEANNUMBERPHOTONS",Vikuiti_efficiency);
-
+    if(Vikuiti_isWLS==0)
+    {
+        mpt_Reflector->AddProperty("ABSLENGTH",energies_vikuiti_abslength,abslength_vikuiti , n_vikuiti_abslength);
+    }
+    else
+    {
+        mpt_Reflector->AddProperty("WLSABSLENGTH",energies_vikuiti_abslength,abslength_vikuiti , n_vikuiti_abslength);
+        mpt_Reflector->AddProperty("WLSCOMPONENT", energies_vikuiti_spec, spec_vikuiti, n_vikuiti_spec);
+        mpt_Reflector->AddConstProperty("WLSTIMECONSTANT",0.2*ns);
+        mpt_Reflector->AddConstProperty("WLSMEANNUMBERPHOTONS",Vikuiti_efficiency);
+    }
+  
     Reflector_mat->SetMaterialPropertiesTable(mpt_Reflector);
 
     G4Box* solidVikuitiLong = new G4Box("VikuitLong",0.5*cryostat_sizeX, 0.5*(cryostat_sizeY-2*AnodeTickness), 0.5*Reflector_thickness);
@@ -285,7 +293,10 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     surface_vikuiti_lar->SetFinish(polished);
     G4MaterialPropertiesTable* mpt_VikuitiLar_Surface = new G4MaterialPropertiesTable();
     mpt_VikuitiLar_Surface->AddProperty("REFLECTIVITY",energies_vikuiti,r_vikuiti,n_vikuiti);
-    mpt_VikuitiLar_Surface->AddProperty("TRANSMITTANCE",{1.0*eV,15*eV},{1,1},2);
+    if(Vikuiti_isWLS==1)
+    {
+        mpt_VikuitiLar_Surface->AddProperty("TRANSMITTANCE",{1.0*eV,15*eV},{1,1},2);
+    }
     surface_vikuiti_lar->SetMaterialPropertiesTable(mpt_VikuitiLar_Surface);
 
     G4OpticalSurface* surface_vikuiti_cryo = new G4OpticalSurface("surface_vikuiti_cryo");
@@ -294,8 +305,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     surface_vikuiti_cryo->SetFinish(polished);
     G4MaterialPropertiesTable* mpt_VikuitiCryo_Surface = new G4MaterialPropertiesTable();
     mpt_VikuitiCryo_Surface->AddProperty("REFLECTIVITY",{1.0*eV,15*eV},{0,0},2);
-    surface_vikuiti_cryo->SetMaterialPropertiesTable(mpt_VikuitiCryo_Surface);
-    
+    surface_vikuiti_cryo->SetMaterialPropertiesTable(mpt_VikuitiCryo_Surface); 
+
     new G4LogicalBorderSurface("LiquidArgon-->AnodeTop", physicalWorld, physicalTopAnode , surface_anode_lar );
     new G4LogicalBorderSurface("LiquidArgon-->AnodeBottom", physicalWorld, physicalBottomAnode , surface_anode_lar );
     new G4LogicalBorderSurface("LiquidArgon-->VikuitiLong1", physicalWorld, physicalVikuitiLong1 , surface_vikuiti_lar );
@@ -376,9 +387,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
         double x = (barH_eixoX1/2.0) * cos(phi);
         double y = (barH_eixoY1/2.0) * sin(phi);
         y = std::max(y, -(cut_value1 - barH_eixoY1/2));
-
         G4TwoVector point(x, y);
-
         // só adiciona se o ponto for diferente do anterior
         if (lastY != y) {
             ellipse1.push_back(point);
@@ -1068,8 +1077,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                                 ,logicWorld,true,cont,false));
                         }    
                         new G4LogicalBorderSurface("World_to_SiPM", physicalWorld, sipm_physicals.back(), sipmSurface);
-                        new G4LogicalBorderSurface("Vikuti_to_SiPM1", physicalVikuitiLong1, sipm_physicals.back(), sipmSurface);
-                        new G4LogicalBorderSurface("Vikuti_to_SiPM2", physicalVikuitiLong2, sipm_physicals.back(), sipmSurface);
+                        new G4LogicalBorderSurface("Vikuti_to_SiPM1", physicalVikuitiLong1, sipm_physicals.back(), sipmSurfaceVikuiti);
+                        new G4LogicalBorderSurface("Vikuti_to_SiPM2", physicalVikuitiLong2, sipm_physicals.back(), sipmSurfaceVikuiti);
                     }
                 }
                 cont++;
@@ -1106,8 +1115,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                                 ,logicWorld,true,cont,false));
                         }    
                         new G4LogicalBorderSurface("World_to_SiPM", physicalWorld, sipm_physicals.back(), sipmSurface);
-                        new G4LogicalBorderSurface("Vikuti_to_SiPM1", physicalVikuitiEnd1, sipm_physicals.back(), sipmSurface);
-                        new G4LogicalBorderSurface("Vikuti_to_SiPM2", physicalVikuitiEnd2, sipm_physicals.back(), sipmSurface);
+                        new G4LogicalBorderSurface("Vikuti_to_SiPM1", physicalVikuitiEnd1, sipm_physicals.back(), sipmSurfaceVikuiti);
+                        new G4LogicalBorderSurface("Vikuti_to_SiPM2", physicalVikuitiEnd2, sipm_physicals.back(), sipmSurfaceVikuiti);
 
                     }
                 }

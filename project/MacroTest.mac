@@ -6,7 +6,9 @@
 #/vis/verbose errors
 #/vis/drawVolume
 
-/run/beamOn 169000000
+/run/beamOn 16900000
+
+#16900000
 
 #16900000
 #

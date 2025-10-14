@@ -6,6 +6,7 @@
 #include <TCanvas.h>
 #include <iostream>
 #include <vector>
+#include <TLegend.h>
 
 void analysis(std::string filename="../build/Data.root")
 {
@@ -24,8 +25,9 @@ void analysis(std::string filename="../build/Data.root")
     tree->SetBranchAddress("PhotonDetectedVIS", &f);
     tree->SetBranchAddress("PhotonDetectedUV", &f2);
 
+    int number_files=1;
     float gain=40000.0/25000.0;
-    float ratio=1.0;
+    float ratio=5.0;
 
     Long64_t nentries = tree->GetEntries();
     for (Long64_t i=0; i<nentries; i++) 
@@ -34,11 +36,11 @@ void analysis(std::string filename="../build/Data.root")
 
         if(z<(-6) || z>6)
         {
-            ratio=gain;
+            ratio=gain/number_files;
         }
         else
         {
-            ratio=1.0;
+            ratio=1.0/number_files;
         }
 
         if(f>=1)
@@ -80,12 +82,22 @@ void analysis(std::string filename="../build/Data.root")
     double lightyield_avg=0;
     double lightyield_min=10000;
 
+    double cut_pe = 0.0;
+
     for(int i=1; i<=nx; i++)        
     {
         for(int j=1; j<=ny; j++)
         {
             mat_vis[i-1][j-1] = h2->GetBinContent(i,j);
             mat_uv[i-1][j-1] = h3->GetBinContent(i,j);
+            if(mat_vis[i-1][j-1]<cut_pe)
+            {
+                mat_vis[i-1][j-1]=0;
+            }
+             if(mat_uv[i-1][j-1]<cut_pe)
+            {
+                mat_uv[i-1][j-1]=0;
+            }
             mat_all[i-1][j-1] = mat_uv[i-1][j-1] +  mat_vis[i-1][j-1];
             buffer[i-1][j-1] = mat_uv[i-1][j-1]/(  mat_uv[i-1][j-1] + mat_vis[i-1][j-1] );
             myratio[i-1][j-1] = mat_uv[i-1][j-1]/(mat_vis[i-1][j-1] );
@@ -148,6 +160,54 @@ void analysis(std::string filename="../build/Data.root")
     TCanvas *c6 = new TCanvas();
     h1d->Draw();  // COLZ = color map
     c6->SaveAs("histFrancesco.png");
+
+   TH1D *h1dR = new TH1D("hist_R","R;R value;Entries", 200, -0.1 , 1.1 );
+    for(int i=0; i<nx; i++)        
+    {
+        for(int j=0; j<ny; j++)
+        {
+            h1dR->Fill(buffer[i][j]);
+        }
+    }
+
+    TH1D *h1dRin = new TH1D("hist_R_in","R (inner);R value;Entries", 200, -0.1 , 1.1 );
+    TH1D *h1dRout = new TH1D("hist_R_out","R (outer);R value;Entries", 200, -0.1 , 1.1 );
+
+    for(int i=0; i<nx; i++)        
+    {
+    for(int j=0; j<ny; j++)
+    {
+        if(i!=0 && i!=(nx-1))
+            h1dRin->Fill(buffer[i][j]);
+        else
+            h1dRout->Fill(buffer[i][j]);
+    }
+    }
+
+    TCanvas *c7 = new TCanvas("c7","R distributions",800,600);
+    c7->SetGrid();
+
+    h1dR->SetLineColor(kBlack);
+    h1dR->SetLineWidth(2);
+    h1dRin->SetLineColor(kBlue+1);
+    h1dRin->SetLineWidth(2);
+    h1dRout->SetLineColor(kRed+1);
+    h1dRout->SetLineWidth(2);
+
+    h1dR->Draw("HIST");
+    h1dRin->Draw("HIST SAME");
+    h1dRout->Draw("HIST SAME");
+
+    TLegend *leg = new TLegend(0.65,0.7,0.88,0.88);
+    leg->AddEntry(h1dR,"All entries","l");
+    leg->AddEntry(h1dRin,"Inner region","l");
+    leg->AddEntry(h1dRout,"Outer region","l");
+    leg->SetBorderSize(0);
+    leg->SetFillStyle(0);
+    leg->Draw();
+
+    c7->SaveAs("histRATIO.png");
+
 
 }
 
