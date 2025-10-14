@@ -251,6 +251,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     auto Vikuiti_isWLS = config_Reflector["isWLS"].get<int>();
     auto mpt_Reflector = new G4MaterialPropertiesTable();
 
+    G4cout << "VIkuiti is a " << Vikuiti_isWLS << " a WLS\n";
+
     mpt_Reflector->AddProperty("RINDEX", {0.1*eV,15*eV} , {Vikuiti_refractionindex,Vikuiti_refractionindex},2);
     if(Vikuiti_isWLS==0)
     {
